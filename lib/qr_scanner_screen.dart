@@ -53,7 +53,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
     this.controller = controller;
     controller.scannedDataStream.listen((scanData) {
       setState(() {
-        // Εδώ μπορείτε να χειρισείτ τα δεδομένα που σαρώθηκαν
+        // Εδώ μπορείτε να χειρισείτ τα δεδομένα που σαρώθηκα
         print('Scanned Data: ${scanData.code}');
         Navigator.pop(context, scanData.code);
       });
