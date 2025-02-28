@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:qr_code_scanner/qr_code_scanner.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
+import 'qr_info_screen.dart'; // Εισαγωγή της οθόνης πληροφοριών
+import 'dart:async'; // Προσθήκη για το Timer
 
 class QRScannerScreen extends StatefulWidget {
   const QRScannerScreen({Key? key}) : super(key: key);
@@ -9,13 +11,21 @@ class QRScannerScreen extends StatefulWidget {
 }
 
 class _QRScannerScreenState extends State<QRScannerScreen> {
-  final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
-  QRViewController? controller;
+  MobileScannerController cameraController = MobileScannerController();
+  bool _isScanning = true; // Flag για έλεγχο πολλαπλών κλήσεων
+  Timer? _debounceTimer; // Timer για debounce
 
   @override
   void dispose() {
-    controller?.dispose();
+    cameraController.dispose();
+    _debounceTimer?.cancel(); // Ακύρωση του timer
     super.dispose();
+  }
+
+  // Συνάρτηση για έλεγχο του περιεχομένου του QR κωδικού
+  bool _isValidQRCode(String code) {
+    // Παράδειγμα: Ο QR κωδικός πρέπει να περιέχει τη λέξη "SPECIAL"
+    return code.contains("");
   }
 
   @override
@@ -24,39 +34,44 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
       appBar: AppBar(
         title: const Text('Scan QR Code'),
       ),
-      body: Column(
-        children: <Widget>[
-          Expanded(
-            flex: 5,
-            child: QRView(
-              key: qrKey,
-              onQRViewCreated: _onQRViewCreated,
-            ),
-          ),
-          Expanded(
-            flex: 1,
-            child: Center(
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                child: const Text('Close Scanner'),
-              ),
-            ),
-          ),
-        ],
+      body: MobileScanner(
+        controller: cameraController,
+        onDetect: (capture) {
+          if (!_isScanning) return; // Αν η σάρωση δεν είναι ενεργή, σταματάμε
+
+          if (_debounceTimer?.isActive ?? false) return; // Αν το timer είναι ενεργό, σταματάμε
+
+          _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+            final String? code = capture.barcodes.first.rawValue;
+            if (code != null && _isValidQRCode(code)) {
+              setState(() {
+                _isScanning = false; // Απενεργοποίηση της σάρωσης
+              });
+
+              // Πλοήγηση στην οθόνη πληροφοριών
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => QRInfoScreen(qrData: code),
+                ),
+              ).then((_) {
+                // Επαναφορά της σάρωσης
+                setState(() {
+                  _isScanning = true;
+                });
+              });
+            } else {
+              // Εμφάνιση μηνύματος λάθους αν ο QR κωδικός δεν είναι έγκυρος
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Invalid QR Code'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            }
+          });
+        },
       ),
     );
-  }
-
-  void _onQRViewCreated(QRViewController controller) {
-    this.controller = controller;
-    controller.scannedDataStream.listen((scanData) {
-      setState(() {
-        // Εδώ μπορείτε να χειρισείτ τα δεδομένα που σαρώθηκα
-        print('Scanned Data: ${scanData.code}');
-        Navigator.pop(context, scanData.code);
-      });
-    });
   }
 }
