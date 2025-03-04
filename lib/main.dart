@@ -37,7 +37,7 @@ class MyHomePage extends StatelessWidget {
           onPressed: () async {
             // 🔥 Δοκιμή σύνδεσης με Firestore
             await FirebaseFirestore.instance
-                .collection('test')
+                .collection('valid_qr_codes')
                 .add({'message': 'Hello, Firebase!'});
           },
           child: const Text("Send Data to Firestore"),
