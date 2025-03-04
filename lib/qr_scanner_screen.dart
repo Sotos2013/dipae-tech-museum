@@ -13,9 +13,9 @@ class QRScannerScreen extends StatefulWidget {
 
 class _QRScannerScreenState extends State<QRScannerScreen> {
   final MobileScannerController cameraController = MobileScannerController();
-  bool _isScanning = true; // Flag για έλεγχο πολλαπλών κλήσεων
+  bool _isScanning = true;
   Timer? _debounceTimer;
-  bool _isFlashOn = false; // Flag για το flashlight
+  bool _isFlashOn = false;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   @override
@@ -29,7 +29,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
     final doc = await _firestore.collection('valid_qr_codes').doc(code).get();
     if (doc.exists) {
       final data = doc.data() as Map<String, dynamic>;
-      Navigator.push(
+      Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (context) => QRInfoScreen(

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'qr_scanner_screen.dart'; // 🔥 Πρόσθεσε το αρχείο του QR Scanner
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'qr_scanner_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,7 +21,68 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const MyHomePage(),
+      home: const ConnectionCheckScreen(),
+    );
+  }
+}
+
+class ConnectionCheckScreen extends StatefulWidget {
+  const ConnectionCheckScreen({Key? key}) : super(key: key);
+
+  @override
+  _ConnectionCheckScreenState createState() => _ConnectionCheckScreenState();
+}
+
+class _ConnectionCheckScreenState extends State<ConnectionCheckScreen> {
+  bool _isChecking = true;
+
+  @override
+  void initState() {
+    super.initState();
+    checkInternet();
+  }
+
+  Future<void> checkInternet() async {
+    var connectivityResult = await Connectivity().checkConnectivity();
+    bool hasInternet = connectivityResult != ConnectivityResult.none;
+
+    if (hasInternet) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const MyHomePage()),
+      );
+    } else {
+      setState(() {
+        _isChecking = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _isChecking
+          ? const Center(child: CircularProgressIndicator())
+          : Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.wifi_off, size: 80, color: Colors.red),
+            const SizedBox(height: 20),
+            const Text(
+              "No Internet Connection",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            const Text("Please connect to the internet and restart the app."),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () => checkInternet(),
+              child: const Text("Retry"),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -49,7 +110,6 @@ class MyHomePage extends StatelessWidget {
             const SizedBox(height: 20),
             ElevatedButton.icon(
               onPressed: () {
-                // 🔥 Πλοήγηση στο QR Scanner Screen
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const QRScannerScreen()),
