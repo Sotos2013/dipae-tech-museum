@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // Εισαγωγή του Firestore
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
-
-import 'package:untitled1/qr_info_screen.dart'; // Προσθήκη για το Timer
+import 'qr_info_screen.dart';
 
 class QRScannerScreen extends StatefulWidget {
   const QRScannerScreen({Key? key}) : super(key: key);
@@ -13,23 +12,22 @@ class QRScannerScreen extends StatefulWidget {
 }
 
 class _QRScannerScreenState extends State<QRScannerScreen> {
-  MobileScannerController cameraController = MobileScannerController();
+  final MobileScannerController cameraController = MobileScannerController();
   bool _isScanning = true; // Flag για έλεγχο πολλαπλών κλήσεων
-  Timer? _debounceTimer; // Timer για debounce
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance; // Firestore instance
+  Timer? _debounceTimer;
+  bool _isFlashOn = false; // Flag για το flashlight
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   @override
   void dispose() {
     cameraController.dispose();
-    _debounceTimer?.cancel(); // Ακύρωση του timer
+    _debounceTimer?.cancel();
     super.dispose();
   }
 
-  // Συνάρτηση για έλεγχο του QR code στο Firestore
   Future<void> _checkQRCode(String code) async {
     final doc = await _firestore.collection('valid_qr_codes').doc(code).get();
     if (doc.exists) {
-      // Ο QR code είναι έγκυρος
       final data = doc.data() as Map<String, dynamic>;
       Navigator.push(
         context,
@@ -40,7 +38,6 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
         ),
       );
     } else {
-      // Ο QR code δεν είναι έγκυρος
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Invalid QR Code'),
@@ -55,30 +52,37 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.deepPurple,
-        title: const Text(
-          'Scan QR Code',
-          style: TextStyle(color: Colors.white),
-        ),
+        title: const Text('Scan QR Code'),
+        actions: [
+          IconButton(
+            icon: Icon(
+              _isFlashOn ? Icons.flash_on : Icons.flash_off,
+              color: Colors.white,
+            ),
+            onPressed: () {
+              setState(() {
+                _isFlashOn = !_isFlashOn;
+                cameraController.toggleTorch();
+              });
+            },
+          ),
+        ],
       ),
       body: Stack(
         children: [
           MobileScanner(
             controller: cameraController,
             onDetect: (capture) {
-              if (!_isScanning) return; // Αν η σάρωση δεν είναι ενεργή, σταματάμε
-
-              if (_debounceTimer?.isActive ?? false) return; // Αν το timer είναι ενεργό, σταματάμε
+              if (!_isScanning) return;
+              if (_debounceTimer?.isActive ?? false) return;
 
               _debounceTimer = Timer(const Duration(milliseconds: 500), () {
                 final String? code = capture.barcodes.first.rawValue;
                 if (code != null) {
                   setState(() {
-                    _isScanning = false; // Απενεργοποίηση της σάρωσης
+                    _isScanning = false;
                   });
-
-                  // Έλεγχος του QR code στο Firestore
                   _checkQRCode(code).then((_) {
-                    // Επαναφορά της σάρωσης
                     setState(() {
                       _isScanning = true;
                     });
@@ -87,7 +91,6 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
               });
             },
           ),
-          // Προσθήκη overlay για την κάμερα
           Center(
             child: Container(
               width: 250,
