@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'dart:async';
 import 'qr_info_screen.dart';
 
@@ -12,10 +13,11 @@ class QRScannerScreen extends StatefulWidget {
 }
 
 class _QRScannerScreenState extends State<QRScannerScreen> {
-  final MobileScannerController cameraController = MobileScannerController();
+  MobileScannerController cameraController = MobileScannerController();
   bool _isScanning = true;
+  bool _hasShownInvalidMessage = false;
+  bool _hasShownNoInternetMessage = false; // 🔥 Προσθήκη flag για το μήνυμα internet
   Timer? _debounceTimer;
-  bool _isFlashOn = false;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   @override
@@ -25,7 +27,36 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
     super.dispose();
   }
 
+  // 🔥 Συνάρτηση για έλεγχο αν υπάρχει σύνδεση στο Internet
+  Future<bool> _checkInternetConnection() async {
+    var connectivityResult = await Connectivity().checkConnectivity();
+    return connectivityResult != ConnectivityResult.none;
+  }
+
+  // 🔥 Συνάρτηση για έλεγχο του QR code στο Firestore
   Future<void> _checkQRCode(String code) async {
+    bool hasInternet = await _checkInternetConnection();
+
+    if (!hasInternet) {
+      if (!_hasShownNoInternetMessage) { // 🔥 Εμφάνιση μόνο μία φορά
+        _hasShownNoInternetMessage = true;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(
+              'Δεν υπάρχει σύνδεση στο Internet!',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        Future.delayed(const Duration(seconds: 3), () {
+          _hasShownNoInternetMessage = false; // 🔥 Επαναφορά για μελλοντική χρήση
+        });
+      }
+      return;
+    }
+
     final doc = await _firestore.collection('valid_qr_codes').doc(code).get();
     if (doc.exists) {
       final data = doc.data() as Map<String, dynamic>;
@@ -38,12 +69,22 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
         ),
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Invalid QR Code'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+      if (!_hasShownInvalidMessage) { // 🔥 Εμφάνιση μηνύματος "Invalid QR Code" μόνο μία φορά
+        _hasShownInvalidMessage = true;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(
+              'Invalid QR Code',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+        Future.delayed(const Duration(seconds: 3), () {
+          _hasShownInvalidMessage = false;
+        });
+      }
     }
   }
 
@@ -52,21 +93,10 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.deepPurple,
-        title: const Text('Scan QR Code'),
-        actions: [
-          IconButton(
-            icon: Icon(
-              _isFlashOn ? Icons.flash_on : Icons.flash_off,
-              color: Colors.white,
-            ),
-            onPressed: () {
-              setState(() {
-                _isFlashOn = !_isFlashOn;
-                cameraController.toggleTorch();
-              });
-            },
-          ),
-        ],
+        title: const Text(
+          'Scan QR Code',
+          style: TextStyle(color: Colors.white),
+        ),
       ),
       body: Stack(
         children: [
@@ -82,6 +112,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
                   setState(() {
                     _isScanning = false;
                   });
+
                   _checkQRCode(code).then((_) {
                     setState(() {
                       _isScanning = true;
