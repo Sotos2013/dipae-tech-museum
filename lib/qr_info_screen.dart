@@ -1,24 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'dart:typed_data';
 
 class QRInfoScreen extends StatelessWidget {
   final String qrData;
 
   const QRInfoScreen({Key? key, required this.qrData}) : super(key: key);
 
-  Future<Uint8List?> _fetchImage(String imageUrl) async {
+  Future<String?> _fetchWikipediaImage(String imageName) async {
+    if (imageName.isEmpty) return null;
+
+    final String apiUrl =
+        "https://en.wikipedia.org/w/api.php?action=query&format=json&prop=imageinfo&iiprop=url&titles=File:$imageName";
+
+    print("Fetching image from: $apiUrl"); // **DEBUG: Εκτύπωση του API URL για έλεγχο**
+
     try {
-      final response = await http.get(
-        Uri.parse(imageUrl),
-        headers: {"User-Agent": "Mozilla/5.0"},
-      );
+      final response = await http.get(Uri.parse(apiUrl));
+
       if (response.statusCode == 200) {
-        return response.bodyBytes;
+        final jsonData = json.decode(response.body);
+        final pages = jsonData['query']['pages'];
+        final page = pages.values.first;
+
+        if (page.containsKey('imageinfo')) {
+          String imageUrl = page['imageinfo'][0]['url'];
+          print("Wikipedia Image URL: $imageUrl"); // **DEBUG: Εκτύπωση του τελικού URL**
+          return imageUrl;
+        } else {
+          print("No imageinfo found in response");
+        }
+      } else {
+        print("Wikipedia API returned status: ${response.statusCode}");
       }
     } catch (e) {
-      return null;
+      print("Error fetching Wikipedia image: $e");
     }
     return null;
   }
@@ -28,7 +44,7 @@ class QRInfoScreen extends StatelessWidget {
     List<String> qrInfoParts = qrData.split("\n");
     String title = qrInfoParts.isNotEmpty ? qrInfoParts[0] : "Άγνωστο Έκθεμα";
     String description = qrInfoParts.length > 1 ? qrInfoParts[1] : "Δεν υπάρχουν πληροφορίες.";
-    String imageUrl = qrInfoParts.length > 2 ? qrInfoParts[2] : "https://via.placeholder.com/150";
+    String imageName = qrInfoParts.length > 2 ? qrInfoParts[2] : "";
 
     return Scaffold(
       appBar: AppBar(
@@ -49,15 +65,25 @@ class QRInfoScreen extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  FutureBuilder<Uint8List?>(
-                    future: _fetchImage(imageUrl),
+                  FutureBuilder<String?>(
+                    future: _fetchWikipediaImage(imageName),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const CircularProgressIndicator();
-                      } else if (snapshot.hasData) {
-                        return Image.memory(snapshot.data!, height: 200, fit: BoxFit.cover);
+                      } else if (snapshot.hasData && snapshot.data != null) {
+                        return ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.network(snapshot.data!,
+                              height: 200, fit: BoxFit.cover),
+                        );
                       } else {
-                        return const Icon(Icons.broken_image, size: 100, color: Colors.red);
+                        return Column(
+                          children: const [
+                            Icon(Icons.broken_image, size: 100, color: Colors.red),
+                            SizedBox(height: 10),
+                            Text("Η εικόνα δεν φορτώθηκε!", style: TextStyle(color: Colors.red)),
+                          ],
+                        );
                       }
                     },
                   ),
