@@ -16,7 +16,8 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
   MobileScannerController cameraController = MobileScannerController();
   bool _isScanning = true;
   bool _hasShownInvalidMessage = false;
-  bool _hasShownNoInternetMessage = false; // 🔥 Προσθήκη flag για το μήνυμα internet
+  bool _hasShownNoInternetMessage = false;
+  bool _isFlashOn = false; // Διακόπτης για το flash
   Timer? _debounceTimer;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
@@ -38,20 +39,20 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
     bool hasInternet = await _checkInternetConnection();
 
     if (!hasInternet) {
-      if (!_hasShownNoInternetMessage) { // 🔥 Εμφάνιση μόνο μία φορά
+      if (!_hasShownNoInternetMessage) {
         _hasShownNoInternetMessage = true;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text(
+          const SnackBar(
+            content: Text(
               'Δεν υπάρχει σύνδεση στο Internet!',
               style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
             ),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
+            duration: Duration(seconds: 3),
           ),
         );
         Future.delayed(const Duration(seconds: 3), () {
-          _hasShownNoInternetMessage = false; // 🔥 Επαναφορά για μελλοντική χρήση
+          _hasShownNoInternetMessage = false;
         });
       }
       return;
@@ -69,16 +70,16 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
         ),
       );
     } else {
-      if (!_hasShownInvalidMessage) { // 🔥 Εμφάνιση μηνύματος "Invalid QR Code" μόνο μία φορά
+      if (!_hasShownInvalidMessage) {
         _hasShownInvalidMessage = true;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text(
+          const SnackBar(
+            content: Text(
               'Invalid QR Code',
               style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
             ),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 2),
+            duration: Duration(seconds: 2),
           ),
         );
         Future.delayed(const Duration(seconds: 3), () {
@@ -92,13 +93,28 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.deepPurple,
+        backgroundColor: const Color(0xFF224366),
         title: const Text(
           'Scan QR Code',
           style: TextStyle(color: Colors.white),
         ),
+        actions: [
+          IconButton(
+            icon: Icon(
+              _isFlashOn ? Icons.flash_on : Icons.flash_off,
+              color: Colors.white,
+            ),
+            onPressed: () {
+              setState(() {
+                _isFlashOn = !_isFlashOn;
+                cameraController.toggleTorch();
+              });
+            },
+          ),
+        ],
       ),
       body: Stack(
+        alignment: Alignment.center,
         children: [
           MobileScanner(
             controller: cameraController,
@@ -106,7 +122,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
               if (!_isScanning) return;
               if (_debounceTimer?.isActive ?? false) return;
 
-              _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+              _debounceTimer = Timer(const Duration(milliseconds: 800), () {
                 final String? code = capture.barcodes.first.rawValue;
                 if (code != null) {
                   setState(() {
@@ -122,16 +138,26 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
               });
             },
           ),
-          Center(
-            child: Container(
+          // 🔥 Animation στο scanner frame
+          Positioned(
+            top: MediaQuery.of(context).size.height * 0.3,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 500),
               width: 250,
               height: 250,
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: Colors.deepPurple,
+                  color: Colors.white,
                   width: 4,
                 ),
                 borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.white.withOpacity(0.5),
+                    blurRadius: 10,
+                    spreadRadius: 1,
+                  ),
+                ],
               ),
             ),
           ),

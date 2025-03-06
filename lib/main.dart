@@ -19,7 +19,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Museum QR Scanner',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Color(0xFF224366)),
         useMaterial3: true,
       ),
       home: const SplashScreen(),
@@ -50,7 +50,7 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.deepPurple,
+      backgroundColor: const Color(0xFF005580),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -58,7 +58,7 @@ class _SplashScreenState extends State<SplashScreen> {
             const Icon(Icons.museum, size: 100, color: Colors.white),
             const SizedBox(height: 20),
             const Text(
-              "Welcome to the Museum QR Scanner",
+              "Καλώς ήρθατε στο Μικρό Τεχνολογικό Μουσείο",
               style: TextStyle(fontSize: 20, color: Colors.white),
             ),
             const SizedBox(height: 10),
@@ -115,15 +115,15 @@ class _ConnectionCheckScreenState extends State<ConnectionCheckScreen> {
             const Icon(Icons.wifi_off, size: 80, color: Colors.red),
             const SizedBox(height: 20),
             const Text(
-              "No Internet Connection",
+              "Δεν υπάρχει σύνδεση στο internet",
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
-            const Text("Please connect to the internet and restart the app."),
+            const Text("Συνδεθείτε ξανά στο internet (WiFi ή Mobile Data) και ανοίξτε ξανά την εφαρμογή."),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () => checkInternet(),
-              child: const Text("Retry"),
+              child: const Text("Ξαναπροσπαθήστε"),
             ),
           ],
         ),
@@ -139,7 +139,7 @@ class MyHomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF005580), // 🔵 Μπλε background
+      backgroundColor: const Color(0xFF224366), // 🔵 Μπλε background
       appBar: AppBar(
         title: const Text(
           'Μικρό Τεχνολογικό Μουσείο',
@@ -152,6 +152,10 @@ class MyHomePage extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Icon(Icons.museum, size: 100, color: Colors.white),
+            Image.asset(
+              'assets/ihu_logo.png',
+              height: 100, // Μπορείς να αλλάξεις το μέγεθος
+            ),
             const SizedBox(height: 20),
             const Text(
               'Σκανάρετε ένα QR Code',
