@@ -24,16 +24,29 @@ class _QuizScreenState extends State<QuizScreen> {
 
   Future<void> _fetchQuestions() async {
     try {
+      print("🔍 Αναζήτηση ερωτήσεων για το QR Code: ${widget.qrCode}");
+
       final doc = await FirebaseFirestore.instance.collection('quizzes').doc(widget.qrCode).get();
 
       if (doc.exists) {
         var data = doc.data() as Map<String, dynamic>;
+        print("📄 Δεδομένα που επιστράφηκαν: $data");
 
-        setState(() {
-          questions = List<Map<String, dynamic>>.from(data['questions'] ?? []);
-          isLoading = false;
-        });
+        if (data.containsKey('questions')) {
+          setState(() {
+            questions = List<Map<String, dynamic>>.from(data['questions']);
+            isLoading = false;
+          });
+
+          print("✅ Φορτώθηκαν ${questions.length} ερωτήσεις!");
+        } else {
+          print("❌ Το έγγραφο υπάρχει αλλά ΔΕΝ περιέχει το πεδίο 'questions'!");
+          setState(() {
+            isLoading = false;
+          });
+        }
       } else {
+        print("❌ Το έγγραφο δεν υπάρχει!");
         setState(() {
           isLoading = false;
         });
