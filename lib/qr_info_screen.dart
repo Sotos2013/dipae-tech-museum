@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:untitled1/quiz_screen.dart';
 
 class QRInfoScreen extends StatelessWidget {
   final String qrCode;
@@ -83,6 +84,25 @@ class QRInfoScreen extends StatelessWidget {
                       label: const Text("Πίσω", style: TextStyle(color: Colors.white)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFD41C1C),
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => QuizScreen(qrCode: qrCode), // 🔥 Περνάμε το QR Code
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.quiz, color: Colors.white),
+                      label: const Text("Quiz", style: TextStyle(color: Colors.white)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
