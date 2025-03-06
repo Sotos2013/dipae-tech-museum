@@ -64,11 +64,10 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => QRInfoScreen(
-            qrData: '${data['name']}\n${data['description']}',
-          ),
+          builder: (context) => QRInfoScreen(qrCode: code), // 🔥 Στέλνουμε μόνο το QR Code!
         ),
       );
+
     } else {
       if (!_hasShownInvalidMessage) {
         _hasShownInvalidMessage = true;
