@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'qr_scanner_screen.dart'; // Οθόνη Scanner QR
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
-
+  await Supabase.initialize(
+    url: 'https://fqnctdcarcmzowvfbcax.supabase.co', // Βάλε εδώ το Supabase URL
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZxbmN0ZGNhcmNtem93dmZiY2F4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE2MDU2NDQsImV4cCI6MjA1NzE4MTY0NH0.9XZICl5hcF5a9VE42BZms6jBotUL9JLDPS2w0Bogk38', // Βάλε εδώ το Supabase Anon Key
+  );
   runApp(const MyApp());
 }
 
@@ -60,6 +64,7 @@ class _SplashScreenState extends State<SplashScreen> {
             const Text(
               "Καλώς ήρθατε στο Μικρό Τεχνολογικό Μουσείο",
               style: TextStyle(fontSize: 20, color: Colors.white),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 10),
             const CircularProgressIndicator(color: Colors.white),

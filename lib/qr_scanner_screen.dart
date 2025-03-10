@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:async';
 import 'qr_info_screen.dart';
 
@@ -15,11 +15,10 @@ class QRScannerScreen extends StatefulWidget {
 class _QRScannerScreenState extends State<QRScannerScreen> {
   MobileScannerController cameraController = MobileScannerController();
   bool _isScanning = true;
-  bool _hasShownInvalidMessage = false;
   bool _hasShownNoInternetMessage = false;
-  bool _isFlashOn = false; // Διακόπτης για το flash
+  bool _hasShownInvalidMessage = false;
+  bool _isFlashOn = false;
   Timer? _debounceTimer;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   @override
   void dispose() {
@@ -28,13 +27,12 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
     super.dispose();
   }
 
-  // 🔥 Συνάρτηση για έλεγχο αν υπάρχει σύνδεση στο Internet
+  // 🔥 Έλεγχος σύνδεσης στο Internet
   Future<bool> _checkInternetConnection() async {
     var connectivityResult = await Connectivity().checkConnectivity();
     return connectivityResult != ConnectivityResult.none;
   }
 
-  // 🔥 Συνάρτηση για έλεγχο του QR code στο Firestore
   Future<void> _checkQRCode(String code) async {
     bool hasInternet = await _checkInternetConnection();
 
@@ -58,33 +56,52 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
       return;
     }
 
-    final doc = await _firestore.collection('valid_qr_codes').doc(code).get();
-    if (doc.exists) {
-      final data = doc.data() as Map<String, dynamic>;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => QRInfoScreen(qrCode: code), // 🔥 Στέλνουμε μόνο το QR Code!
-        ),
-      );
+    print("🔍 Αναζήτηση για QR Code: $code");
 
-    } else {
-      if (!_hasShownInvalidMessage) {
-        _hasShownInvalidMessage = true;
+    try {
+      final response = await Supabase.instance.client
+          .from('valid_qr_codes')
+          .select()
+          .eq('id', code)
+          .maybeSingle(); // ✅ Αν δεν βρεθεί επιστρέφει `null` αντί για error
+
+      print("📄 Αποτελέσματα από Supabase: $response");
+
+      if (response != null) {
+        print("✅ Βρέθηκε εγγραφή στο Supabase: ${response['name']}");
+        print("🔍 Εικόνα από Supabase: ${response['imageUrl']}");
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => QRInfoScreen(
+              id: response['id'], // id εκθέματος
+              name: response['name'], // Όνομα εκθέματος
+              description: response['description'], // Περιγραφή
+              imageUrl: response['imageUrl'], // URL εικόνας
+            ),
+          ),
+        );
+      } else {
+        print("❌ Δεν βρέθηκε καμία εγγραφή στο Supabase!");
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'Invalid QR Code',
+              '❌ Μη έγκυρο QR Code!',
               style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
             ),
             backgroundColor: Colors.red,
-            duration: Duration(seconds: 2),
+            duration: Duration(seconds: 3),
           ),
         );
-        Future.delayed(const Duration(seconds: 3), () {
-          _hasShownInvalidMessage = false;
-        });
       }
+    } catch (e) {
+      print("❌ Σφάλμα κατά την αναζήτηση QR Code: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('⚠️ Σφάλμα κατά την επικοινωνία με τη βάση δεδομένων.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
     }
   }
 
@@ -137,7 +154,6 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
               });
             },
           ),
-          // 🔥 Animation στο scanner frame
           Positioned(
             top: MediaQuery.of(context).size.height * 0.3,
             child: AnimatedContainer(

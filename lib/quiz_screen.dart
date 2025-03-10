@@ -1,8 +1,9 @@
+import 'dart:convert'; // ✅ Χρειαζόμαστε το JSON decoding
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class QuizScreen extends StatefulWidget {
-  final String qrCode; // 🔥 Παίρνουμε το QR Code του εκθέματος
+  final String qrCode;
 
   const QuizScreen({Key? key, required this.qrCode}) : super(key: key);
 
@@ -26,27 +27,27 @@ class _QuizScreenState extends State<QuizScreen> {
     try {
       print("🔍 Αναζήτηση ερωτήσεων για το QR Code: ${widget.qrCode}");
 
-      final doc = await FirebaseFirestore.instance.collection('quizzes').doc(widget.qrCode).get();
+      // ✅ Φέρνουμε όλες τις ερωτήσεις με το ίδιο ID
+      final List<dynamic> response = await Supabase.instance.client
+          .from('quizzes')
+          .select()
+          .eq('id', widget.qrCode);
 
-      if (doc.exists) {
-        var data = doc.data() as Map<String, dynamic>;
-        print("📄 Δεδομένα που επιστράφηκαν: $data");
+      if (response.isNotEmpty) {
+        setState(() {
+          questions = response.map((question) {
+            return {
+              'question': question['question'],
+              'answers': jsonDecode(question['answers']), // ✅ Μετατροπή JSON
+            };
+          }).toList();
 
-        if (data.containsKey('questions')) {
-          setState(() {
-            questions = List<Map<String, dynamic>>.from(data['questions']);
-            isLoading = false;
-          });
+          isLoading = false;
+        });
 
-          print("✅ Φορτώθηκαν ${questions.length} ερωτήσεις!");
-        } else {
-          print("❌ Το έγγραφο υπάρχει αλλά ΔΕΝ περιέχει το πεδίο 'questions'!");
-          setState(() {
-            isLoading = false;
-          });
-        }
+        print("✅ Φορτώθηκαν ${questions.length} ερωτήσεις για το ${widget.qrCode}!");
       } else {
-        print("❌ Το έγγραφο δεν υπάρχει!");
+        print("❌ Δεν βρέθηκαν ερωτήσεις!");
         setState(() {
           isLoading = false;
         });
@@ -64,6 +65,7 @@ class _QuizScreenState extends State<QuizScreen> {
       score++;
     }
 
+    // ✅ Ελέγχουμε αν υπάρχει άλλη ερώτηση ή αν τελείωσε το Quiz
     if (currentQuestionIndex < questions.length - 1) {
       setState(() {
         currentQuestionIndex++;
@@ -83,8 +85,8 @@ class _QuizScreenState extends State<QuizScreen> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.pop(context); // Κλείνει το quiz
-                Navigator.pop(context); // Επιστροφή στην αρχική οθόνη
+                Navigator.pop(context);
+                Navigator.pop(context); // ✅ Επιστροφή στην προηγούμενη οθόνη
               },
               child: const Text("Εντάξει"),
             ),
@@ -99,7 +101,7 @@ class _QuizScreenState extends State<QuizScreen> {
     if (isLoading) {
       return Scaffold(
         appBar: AppBar(title: const Text("Quiz")),
-        body: const Center(child: CircularProgressIndicator()), // 🔄 Φόρτωση
+        body: const Center(child: CircularProgressIndicator()),
       );
     }
 
@@ -119,7 +121,7 @@ class _QuizScreenState extends State<QuizScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Quiz"),
+        title: Text("Ερώτηση ${currentQuestionIndex + 1} / ${questions.length}"),
         backgroundColor: Colors.green,
       ),
       body: Padding(
