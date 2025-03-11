@@ -1,4 +1,4 @@
-import 'dart:convert'; // ✅ Χρειαζόμαστε το JSON decoding
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -26,13 +26,11 @@ class _QuizScreenState extends State<QuizScreen> {
   Future<void> _fetchQuestions() async {
     try {
       print("🔍 Αναζήτηση ερωτήσεων για το QR Code: ${widget.qrCode}");
-
       // ✅ Φέρνουμε όλες τις ερωτήσεις με το ίδιο ID
       final List<dynamic> response = await Supabase.instance.client
           .from('quizzes')
           .select()
           .eq('id', widget.qrCode);
-
       if (response.isNotEmpty) {
         setState(() {
           questions = response.map((question) {

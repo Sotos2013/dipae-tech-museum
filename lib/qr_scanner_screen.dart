@@ -16,7 +16,6 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
   MobileScannerController cameraController = MobileScannerController();
   bool _isScanning = true;
   bool _hasShownNoInternetMessage = false;
-  bool _hasShownInvalidMessage = false;
   bool _isFlashOn = false;
   Timer? _debounceTimer;
 
