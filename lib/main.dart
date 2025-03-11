@@ -67,7 +67,7 @@ class _SplashScreenState extends State<SplashScreen> {
             const Icon(Icons.museum, size: 100, color: Colors.white),
             const SizedBox(height: 20),
             const Text(
-              "Καλώς ήρθατε στο Μικρό Τεχνολογικό Μουσείο",
+              "Καλώς ήρθατε στο Τεχνολογικό Μουσείο του ΔΙΠΑΕ",
               style: TextStyle(fontSize: 20, color: Colors.white),
               textAlign: TextAlign.center,
             ),
@@ -168,6 +168,7 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       body: RefreshIndicator(
         onRefresh: _fetchRandomExhibit, // 🔄 Ανανεώνει το exhibit με swipe down
+        color: Color(0xFFD41C1C),
         child: ListView(
           padding: const EdgeInsets.all(20.0),
           children: [
@@ -228,23 +229,115 @@ class _MyHomePageState extends State<MyHomePage> {
                     ),
                   );
                 },
-                child: Card(
-                  elevation: 5,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF224366), // 🔵 Μπλε background
+                    borderRadius: BorderRadius.circular(15), // Προαιρετικά: rounded edges
+                  ),
+                  padding: const EdgeInsets.all(10), // Προσθέτει εσωτερικά περιθώρια
                   child: Column(
                     children: [
-                      Image.network(
-                        randomExhibit!['imageUrl'],
-                        height: 150,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(10.0),
-                        child: Text(
-                          "🔍 Τυχαίο Έκθεμα: ${randomExhibit!['name']}",
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      // 🎲 Τυχαίο Έκθεμα της Ημέρας
+                      if (randomExhibit != null)
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => QRInfoScreen(
+                                  id: randomExhibit!['id'],
+                                  name: randomExhibit!['name'],
+                                  description: randomExhibit!['description'],
+                                  imageUrl: randomExhibit!['imageUrl'],
+                                ),
+                              ),
+                            );
+                          },
+                          child: Card(
+                            elevation: 5,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                            child: Column(
+                              children: [
+                                Image.network(
+                                  randomExhibit!['imageUrl'],
+                                  height: 150,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.all(10.0),
+                                  child: Text(
+                                    "🔍 Τυχαίο Έκθεμα: ${randomExhibit!['name']}",
+                                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
+
+                      const SizedBox(height: 20),
+
+                      // ℹ️ Πληροφορίες Μουσείου (ΜΕ ΜΠΛΕ BACKGROUND)
+                      Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF005580), // 🔵 Μπλε background
+                          borderRadius: BorderRadius.circular(15), // Προαιρετικά: rounded edges
+                        ),
+                        padding: const EdgeInsets.all(15), // Προσθέτει εσωτερικά περιθώρια
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: const [
+                            Text(
+                              "🏛️ Μικρό Τεχνολογικό Μουσείο",
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                            ),
+                            SizedBox(height: 10),
+                            Text(
+                              "Σας καλωσορίζουμε στο Μικρό Τεχνολογικό Μουσείο, "
+                                  "έναν μοναδικό εκθεσιακό χώρο μέσα σε ένα παλιό βαγόνι τρένου! "
+                                  "Εδώ, η ιστορία της τεχνολογίας ζωντανεύει, "
+                                  "συνδέοντας το παρελθόν με το παρόν και το μέλλον.",
+                              style: TextStyle(fontSize: 16, color: Colors.white),
+                            ),
+                            SizedBox(height: 15),
+                            Text(
+                              "🚂 Ένα Βαγόνι, Μια Ιστορία",
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                            ),
+                            SizedBox(height: 10),
+                            Text(
+                              "Το μουσείο στεγάζεται σε ένα αναπαλαιωμένο βαγόνι τρένου, "
+                                  "συμβολίζοντας το ταξίδι της τεχνολογικής εξέλιξης. "
+                                  "Μέσα σε αυτόν τον ιδιαίτερο χώρο, κάθε αντικείμενο αφηγείται τη δική του ιστορία, "
+                                  "προκαλώντας σας σε ένα ταξίδι γνώσης και ανακάλυψης.",
+                              style: TextStyle(fontSize: 16, color: Colors.white),
+                            ),
+                            SizedBox(height: 15),
+                            Text(
+                              "🔎 Τι θα ανακαλύψετε;",
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                            ),
+                            SizedBox(height: 10),
+                            Text(
+                              "📌 Ιστορικές Συσκευές & Υπολογιστές\n"
+                                  "   • Από τις πρώτες αριθμομηχανές έως τους πρώτους προσωπικούς υπολογιστές\n"
+                                  "📡 Τηλεπικοινωνίες\n"
+                                  "   • Ραδιόφωνα, τηλέφωνα και άλλες συσκευές που άλλαξαν τον τρόπο επικοινωνίας\n"
+                                  "🔬 Επιστημονικά Όργανα\n"
+                                  "   • Εργαλεία που χρησιμοποιήθηκαν για έρευνα και καινοτομία",
+                              style: TextStyle(fontSize: 16, color: Colors.white),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // 🏛️ **Λογότυπο ΔΙΠΑΕ**
+                      Image.asset(
+                        'assets/ihu_logo.png',
+                        height: 80,
                       ),
                     ],
                   ),
