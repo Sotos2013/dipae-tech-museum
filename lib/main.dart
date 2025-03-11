@@ -19,7 +19,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Museum QR Scanner',
+      title: 'Τεχνολογικό Μουσείο ΔΙΠΑΕ',
       theme: ThemeData(
         primaryColor: const Color(0xFFD41C1C),
         scaffoldBackgroundColor: const Color(0xFF224366),
@@ -158,7 +158,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Μικρό Τεχνολογικό Μουσείο"),
+        title: const Text("Τεχνολογικό Μουσείο ΔΙΠΑΕ"),
         actions: [
           IconButton(
             icon: const Icon(Icons.info_outline, color: Colors.white),
@@ -338,6 +338,10 @@ class _MyHomePageState extends State<MyHomePage> {
                       Image.asset(
                         'assets/ihu_logo.png',
                         height: 80,
+                      ),
+                      Text(
+                        "Διεθνές Πανεπιστήμιο της Ελλάδος",
+                        style: TextStyle(fontSize: 16, color: Colors.white),
                       ),
                     ],
                   ),

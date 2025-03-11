@@ -110,7 +110,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF224366),
         title: const Text(
-          'Scan QR Code',
+          'Εύρεση QR εκθέματος',
           style: TextStyle(color: Colors.white),
         ),
         actions: [
