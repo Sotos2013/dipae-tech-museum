@@ -36,7 +36,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// 🔥 **Splash Screen** για 3 δευτερόλεπτα πριν μεταφερθεί στην εφαρμογή
+// 🔥 **Splash Screen**
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
 
@@ -102,9 +102,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> _fetchRandomExhibit() async {
     final response = await Supabase.instance.client
-        .from('valid_qr_codes')
-        .select()
-        .limit(1)
+        .rpc('get_random_exhibit') // 🔥 Παίρνουμε ένα τυχαίο έκθεμα
         .maybeSingle();
 
     if (response != null) {
@@ -141,8 +139,8 @@ class _MyHomePageState extends State<MyHomePage> {
         return AlertDialog(
           title: const Text("Σχετικά με την εφαρμογή"),
           content: const Text(
-            "Αυτή είναι μια εφαρμογή QR Scanner για το Μικρό Τεχνολογικό Μουσείο. "
-                "Δημιουργήθηκε για να παρέχει πληροφορίες για εκθέματα μέσω QR Codes και Quiz."
+            "Αυτή είναι μια εφαρμογή για το Τεχνολογικό Μουσείο του Διεθνούς Πανεπιστημίου της Ελλάδος. "
+                "Δημιουργήθηκε για να παρέχει πληροφορίες για εκθέματα μέσω QR Codes και ερωτήσεις πολλαπλής επιλογής για το κάθε έκθεμα."
                 "\n\nGitHub: https://github.com/your-repository",
           ),
           actions: [
@@ -168,9 +166,10 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
+      body: RefreshIndicator(
+        onRefresh: _fetchRandomExhibit, // 🔄 Ανανεώνει το exhibit με swipe down
+        child: ListView(
+          padding: const EdgeInsets.all(20.0),
           children: [
             // 🔍 Πεδίο Αναζήτησης
             TextField(
@@ -188,76 +187,69 @@ class _MyHomePageState extends State<MyHomePage> {
 
             // ✅ Αν γίνεται αναζήτηση, δείξε τα αποτελέσματα
             if (isSearching)
-              Expanded(
-                child: ListView.builder(
-                  itemCount: searchResults.length,
-                  itemBuilder: (context, index) {
-                    var exhibit = searchResults[index];
-                    return ListTile(
-                      title: Text(exhibit['name'], style: const TextStyle(color: Colors.white)),
-                      subtitle: Text(exhibit['description'], style: const TextStyle(color: Colors.white70)),
-                      leading: Image.network(
-                        exhibit['imageUrl'],
-                        width: 50,
-                        height: 50,
-                        fit: BoxFit.cover,
-                      ),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => QRInfoScreen(
-                              id: exhibit['id'],
-                              name: exhibit['name'],
-                              description: exhibit['description'],
-                              imageUrl: exhibit['imageUrl'],
-                            ),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
-              )
-            else ...[
-              // 🎲 Τυχαίο Έκθεμα της Ημέρας
-              if (randomExhibit != null)
-                GestureDetector(
+              ...searchResults.map((exhibit) {
+                return ListTile(
+                  title: Text(exhibit['name'], style: const TextStyle(color: Colors.white)),
+                  subtitle: Text(exhibit['description'], style: const TextStyle(color: Colors.white70)),
+                  leading: Image.network(
+                    exhibit['imageUrl'],
+                    width: 50,
+                    height: 50,
+                    fit: BoxFit.cover,
+                  ),
                   onTap: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => QRInfoScreen(
-                          id: randomExhibit!['id'],
-                          name: randomExhibit!['name'],
-                          description: randomExhibit!['description'],
-                          imageUrl: randomExhibit!['imageUrl'],
+                          id: exhibit['id'],
+                          name: exhibit['name'],
+                          description: exhibit['description'],
+                          imageUrl: exhibit['imageUrl'],
                         ),
                       ),
                     );
                   },
-                  child: Card(
-                    elevation: 5,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                    child: Column(
-                      children: [
-                        Image.network(
-                          randomExhibit!['imageUrl'],
-                          height: 150,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(10.0),
-                          child: Text(
-                            "🔍 Τυχαίο Έκθεμα: ${randomExhibit!['name']}",
-                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ],
+                );
+              }).toList()
+            else if (randomExhibit != null) ...[
+              // 🎲 Τυχαίο Έκθεμα της Ημέρας
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => QRInfoScreen(
+                        id: randomExhibit!['id'],
+                        name: randomExhibit!['name'],
+                        description: randomExhibit!['description'],
+                        imageUrl: randomExhibit!['imageUrl'],
+                      ),
                     ),
+                  );
+                },
+                child: Card(
+                  elevation: 5,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                  child: Column(
+                    children: [
+                      Image.network(
+                        randomExhibit!['imageUrl'],
+                        height: 150,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(10.0),
+                        child: Text(
+                          "🔍 Τυχαίο Έκθεμα: ${randomExhibit!['name']}",
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
+              ),
             ],
           ],
         ),
