@@ -366,6 +366,12 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ),
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(context, MaterialPageRoute(builder: (context) => const QRScannerScreen()));
+        },
+        child: const Icon(Icons.qr_code_scanner, color: Colors.white),
+      ),
     );
   }
 }
