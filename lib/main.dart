@@ -169,193 +169,202 @@ class _MyHomePageState extends State<MyHomePage> {
       body: RefreshIndicator(
         onRefresh: _fetchRandomExhibit, // 🔄 Ανανεώνει το exhibit με swipe down
         color: Color(0xFFD41C1C),
-        child: ListView(
-          padding: const EdgeInsets.all(20.0),
-          children: [
-            // 🔍 Πεδίο Αναζήτησης
-            TextField(
-              controller: searchController,
-              decoration: InputDecoration(
-                labelText: "Αναζήτηση εκθέματος...",
-                prefixIcon: const Icon(Icons.search),
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+        child: GestureDetector(
+          onTap: () {
+            // Κλείνει το πληκτρολόγιο όταν ο χρήστης πατάει εκτός του πεδίου αναζήτησης
+            FocusScope.of(context).unfocus();
+          },
+          child: ListView(
+            padding: const EdgeInsets.all(20.0),
+            children: [
+              // 🔍 Πεδίο Αναζήτησης
+              TextField(
+                controller: searchController,
+                decoration: InputDecoration(
+                  labelText: "Αναζήτηση εκθέματος...",
+                  prefixIcon: const Icon(Icons.search),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                onChanged: _searchExhibits,
               ),
-              onChanged: _searchExhibits,
-            ),
-            const SizedBox(height: 20),
+              const SizedBox(height: 20),
 
-            // ✅ Αν γίνεται αναζήτηση, δείξε τα αποτελέσματα
-            if (isSearching)
-              ...searchResults.map((exhibit) {
-                return ListTile(
-                  title: Text(exhibit['name'], style: const TextStyle(color: Colors.white)),
-                  subtitle: Text(exhibit['description'], style: const TextStyle(color: Colors.white70)),
-                  leading: Image.network(
-                    exhibit['imageUrl'],
-                    width: 50,
-                    height: 50,
-                    fit: BoxFit.cover,
-                  ),
+              // ✅ Αν γίνεται αναζήτηση, δείξε τα αποτελέσματα
+              if (isSearching)
+                if (searchResults.isEmpty)
+                  const Center(
+                    child: Text(
+                      "Δεν βρέθηκαν αποτελέσματα",
+                      style: TextStyle(color: Colors.white, fontSize: 16),
+                    ),
+                  )
+                else
+                  ...searchResults.map((exhibit) {
+                    return ListTile(
+                      title: Text(exhibit['name'], style: const TextStyle(color: Colors.white)),
+                      subtitle: Text(exhibit['description'], style: const TextStyle(color: Colors.white70)),
+                      leading: Image.network(
+                        exhibit['imageUrl'],
+                        width: 50,
+                        height: 50,
+                        fit: BoxFit.cover,
+                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => QRInfoScreen(
+                              id: exhibit['id'],
+                              name: exhibit['name'],
+                              description: exhibit['description'],
+                              imageUrl: exhibit['imageUrl'],
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  }).toList()
+              else if (randomExhibit != null) ...[
+                // 🎲 Τυχαίο Έκθεμα της Ημέρας
+                GestureDetector(
                   onTap: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => QRInfoScreen(
-                          id: exhibit['id'],
-                          name: exhibit['name'],
-                          description: exhibit['description'],
-                          imageUrl: exhibit['imageUrl'],
+                          id: randomExhibit!['id'],
+                          name: randomExhibit!['name'],
+                          description: randomExhibit!['description'],
+                          imageUrl: randomExhibit!['imageUrl'],
                         ),
                       ),
                     );
                   },
-                );
-              }).toList()
-            else if (randomExhibit != null) ...[
-              // 🎲 Τυχαίο Έκθεμα της Ημέρας
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => QRInfoScreen(
-                        id: randomExhibit!['id'],
-                        name: randomExhibit!['name'],
-                        description: randomExhibit!['description'],
-                        imageUrl: randomExhibit!['imageUrl'],
-                      ),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF224366), // 🔵 Μπλε background
+                      borderRadius: BorderRadius.circular(15), // Προαιρετικά: rounded edges
                     ),
-                  );
-                },
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF224366), // 🔵 Μπλε background
-                    borderRadius: BorderRadius.circular(15), // Προαιρετικά: rounded edges
-                  ),
-                  padding: const EdgeInsets.all(10), // Προσθέτει εσωτερικά περιθώρια
-                  child: Column(
-                    children: [
-                      // 🎲 Τυχαίο Έκθεμα της Ημέρας
-                      if (randomExhibit != null)
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => QRInfoScreen(
-                                  id: randomExhibit!['id'],
-                                  name: randomExhibit!['name'],
-                                  description: randomExhibit!['description'],
-                                  imageUrl: randomExhibit!['imageUrl'],
-                                ),
-                              ),
-                            );
-                          },
-                          child: Card(
-                            elevation: 5,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                            child: Column(
-                              children: [
-                                Image.network(
-                                  randomExhibit!['imageUrl'],
-                                  height: 150,
-                                  width: double.infinity,
-                                  fit: BoxFit.cover,
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.all(10.0),
-                                  child: Text(
-                                    "🔍 Τυχαίο Έκθεμα: ${randomExhibit!['name']}",
-                                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    padding: const EdgeInsets.all(10), // Προσθέτει εσωτερικά περιθώρια
+                    child: Column(
+                      children: [
+                        // 🎲 Τυχαίο Έκθεμα της Ημέρας
+                        if (randomExhibit != null)
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => QRInfoScreen(
+                                    id: randomExhibit!['id'],
+                                    name: randomExhibit!['name'],
+                                    description: randomExhibit!['description'],
+                                    imageUrl: randomExhibit!['imageUrl'],
                                   ),
                                 ),
-                              ],
+                              );
+                            },
+                            child: Card(
+                              elevation: 5,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                              child: Column(
+                                children: [
+                                  Image.network(
+                                    randomExhibit!['imageUrl'],
+                                    height: 150,
+                                    width: double.infinity,
+                                    fit: BoxFit.cover,
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.all(10.0),
+                                    child: Text(
+                                      "🔍 Τυχαίο Έκθεμα: ${randomExhibit!['name']}",
+                                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
+                          ),
+
+                        const SizedBox(height: 20),
+
+                        // ℹ️ Πληροφορίες Μουσείου (ΜΕ ΜΠΛΕ BACKGROUND)
+                        Container(
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF005580), // 🔵 Μπλε background
+                            borderRadius: BorderRadius.circular(15), // Προαιρετικά: rounded edges
+                          ),
+                          padding: const EdgeInsets.all(15), // Προσθέτει εσωτερικά περιθώρια
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: const [
+                              Text(
+                                "🏛️ Μικρό Τεχνολογικό Μουσείο",
+                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                              ),
+                              SizedBox(height: 10),
+                              Text(
+                                "Σας καλωσορίζουμε στο Μικρό Τεχνολογικό Μουσείο, "
+                                    "έναν μοναδικό εκθεσιακό χώρο μέσα σε ένα παλιό βαγόνι τρένου! "
+                                    "Εδώ, η ιστορία της τεχνολογίας ζωντανεύει, "
+                                    "συνδέοντας το παρελθόν με το παρόν και το μέλλον.",
+                                style: TextStyle(fontSize: 16, color: Colors.white),
+                              ),
+                              SizedBox(height: 15),
+                              Text(
+                                "🚂 Ένα Βαγόνι, Μια Ιστορία",
+                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                              ),
+                              SizedBox(height: 10),
+                              Text(
+                                "Το μουσείο στεγάζεται σε ένα αναπαλαιωμένο βαγόνι τρένου, "
+                                    "συμβολίζοντας το ταξίδι της τεχνολογικής εξέλιξης. "
+                                    "Μέσα σε αυτόν τον ιδιαίτερο χώρο, κάθε αντικείμενο αφηγείται τη δική του ιστορία, "
+                                    "προκαλώντας σας σε ένα ταξίδι γνώσης και ανακάλυψης.",
+                                style: TextStyle(fontSize: 16, color: Colors.white),
+                              ),
+                              SizedBox(height: 15),
+                              Text(
+                                "🔎 Τι θα ανακαλύψετε;",
+                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                              ),
+                              SizedBox(height: 10),
+                              Text(
+                                "📌 Ιστορικές Συσκευές & Υπολογιστές\n"
+                                    "   • Από τις πρώτες αριθμομηχανές έως τους πρώτους προσωπικούς υπολογιστές\n"
+                                    "📡 Τηλεπικοινωνίες\n"
+                                    "   • Ραδιόφωνα, τηλέφωνα και άλλες συσκευές που άλλαξαν τον τρόπο επικοινωνίας\n"
+                                    "🔬 Επιστημονικά Όργανα\n"
+                                    "   • Εργαλεία που χρησιμοποιήθηκαν για έρευνα και καινοτομία",
+                                style: TextStyle(fontSize: 16, color: Colors.white),
+                              ),
+                            ],
                           ),
                         ),
 
-                      const SizedBox(height: 20),
+                        const SizedBox(height: 20),
 
-                      // ℹ️ Πληροφορίες Μουσείου (ΜΕ ΜΠΛΕ BACKGROUND)
-                      Container(
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF005580), // 🔵 Μπλε background
-                          borderRadius: BorderRadius.circular(15), // Προαιρετικά: rounded edges
+                        // 🏛️ **Λογότυπο ΔΙΠΑΕ**
+                        Image.asset(
+                          'assets/ihu_logo.png',
+                          height: 80,
                         ),
-                        padding: const EdgeInsets.all(15), // Προσθέτει εσωτερικά περιθώρια
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Text(
-                              "🏛️ Μικρό Τεχνολογικό Μουσείο",
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                            ),
-                            SizedBox(height: 10),
-                            Text(
-                              "Σας καλωσορίζουμε στο Μικρό Τεχνολογικό Μουσείο, "
-                                  "έναν μοναδικό εκθεσιακό χώρο μέσα σε ένα παλιό βαγόνι τρένου! "
-                                  "Εδώ, η ιστορία της τεχνολογίας ζωντανεύει, "
-                                  "συνδέοντας το παρελθόν με το παρόν και το μέλλον.",
-                              style: TextStyle(fontSize: 16, color: Colors.white),
-                            ),
-                            SizedBox(height: 15),
-                            Text(
-                              "🚂 Ένα Βαγόνι, Μια Ιστορία",
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                            ),
-                            SizedBox(height: 10),
-                            Text(
-                              "Το μουσείο στεγάζεται σε ένα αναπαλαιωμένο βαγόνι τρένου, "
-                                  "συμβολίζοντας το ταξίδι της τεχνολογικής εξέλιξης. "
-                                  "Μέσα σε αυτόν τον ιδιαίτερο χώρο, κάθε αντικείμενο αφηγείται τη δική του ιστορία, "
-                                  "προκαλώντας σας σε ένα ταξίδι γνώσης και ανακάλυψης.",
-                              style: TextStyle(fontSize: 16, color: Colors.white),
-                            ),
-                            SizedBox(height: 15),
-                            Text(
-                              "🔎 Τι θα ανακαλύψετε;",
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                            ),
-                            SizedBox(height: 10),
-                            Text(
-                              "📌 Ιστορικές Συσκευές & Υπολογιστές\n"
-                                  "   • Από τις πρώτες αριθμομηχανές έως τους πρώτους προσωπικούς υπολογιστές\n"
-                                  "📡 Τηλεπικοινωνίες\n"
-                                  "   • Ραδιόφωνα, τηλέφωνα και άλλες συσκευές που άλλαξαν τον τρόπο επικοινωνίας\n"
-                                  "🔬 Επιστημονικά Όργανα\n"
-                                  "   • Εργαλεία που χρησιμοποιήθηκαν για έρευνα και καινοτομία",
-                              style: TextStyle(fontSize: 16, color: Colors.white),
-                            ),
-                          ],
+                        Text(
+                          "Διεθνές Πανεπιστήμιο της Ελλάδος",
+                          style: TextStyle(fontSize: 16, color: Colors.white),
                         ),
-                      ),
 
-                      const SizedBox(height: 20),
-
-                      // 🏛️ **Λογότυπο ΔΙΠΑΕ**
-                      Image.asset(
-                        'assets/ihu_logo.png',
-                        height: 80,
-                      ),
-                      Text(
-                        "Διεθνές Πανεπιστήμιο της Ελλάδος",
-                        style: TextStyle(fontSize: 16, color: Colors.white),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
+              ],
             ],
-          ],
+          ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => const QRScannerScreen()));
-        },
-        child: const Icon(Icons.qr_code_scanner, color: Colors.white),
       ),
     );
   }
