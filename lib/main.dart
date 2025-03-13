@@ -141,7 +141,7 @@ class _MyHomePageState extends State<MyHomePage> {
           content: const Text(
             "Αυτή είναι μια εφαρμογή για το Τεχνολογικό Μουσείο του Διεθνούς Πανεπιστημίου της Ελλάδος. "
                 "Δημιουργήθηκε για να παρέχει πληροφορίες για εκθέματα μέσω QR Codes και ερωτήσεις πολλαπλής επιλογής για το κάθε έκθεμα."
-                "\n\nGitHub: https://github.com/your-repository",
+                "\n\nGitHub: https://github.com/Sotos2013/dipae-tech-museum",
           ),
           actions: [
             TextButton(
