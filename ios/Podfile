@@ -1,8 +1,9 @@
 platform :ios, '15.5'
 
-target 'Runner' do
-  use_frameworks!
-  use_modular_headers!
+use_frameworks!
+use_modular_headers!
 
-  flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+target 'Runner' do
+  # Εισαγωγή Flutter build tool
+  install_all_flutter_pods File.dirname(File.realpath(__FILE__))
 end
