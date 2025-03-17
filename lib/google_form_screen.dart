@@ -1,53 +1,29 @@
 import 'package:flutter/material.dart';
-import 'package:webview_flutter/webview_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-class GoogleFormScreen extends StatefulWidget {
-  @override
-  _GoogleFormScreenState createState() => _GoogleFormScreenState();
-}
+class GoogleFormScreen extends StatelessWidget {
+  final String formUrl = "https://forms.gle/iqXLLLfEHeTtEhtd6";
 
-class _GoogleFormScreenState extends State<GoogleFormScreen> {
-  late final WebViewController _controller;
-  bool canGoBack = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _initializeWebView();
-  }
-
-  void _initializeWebView() {
-    _controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..loadRequest(Uri.parse('https://forms.gle/iGzVPVczSft26V8d9')) // Replace with your Google Form link
-      ..setNavigationDelegate(NavigationDelegate(
-        onPageFinished: (String url) async {
-          bool value = await _controller.canGoBack();
-          setState(() {
-            canGoBack = value;
-          });
-        },
-      ));
+  Future<void> _launchForm() async {
+    if (!await launchUrl(Uri.parse(formUrl), mode: LaunchMode.externalApplication)) {
+      throw 'Could not launch $formUrl';
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Ερωτηματολόγιο"),
-        actions: [
-          if (canGoBack)
-            IconButton(
-              icon: const Icon(Icons.arrow_back),
-              onPressed: () async {
-                if (await _controller.canGoBack()) {
-                  _controller.goBack();
-                }
-              },
-            ),
-        ],
+      appBar: AppBar(title: const Text('Ερωτηματολόγιο')),
+      body: Center(
+        child: ElevatedButton(
+          onPressed: _launchForm,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red, // 🔴 Κόκκινο background
+            foregroundColor: Colors.white, // ⚪ Άσπρο κείμενο
+          ),
+          child: const Text('Άνοιξε τη φόρμα'),
+        ),
       ),
-      body: WebViewWidget(controller: _controller),
     );
   }
 }
