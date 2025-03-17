@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'qr_info_screen.dart';
 import 'qr_scanner_screen.dart';
+import 'google_form_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -355,6 +356,27 @@ class _MyHomePageState extends State<MyHomePage> {
                         Text(
                           "Διεθνές Πανεπιστήμιο της Ελλάδος",
                           style: TextStyle(fontSize: 16, color: Colors.white),
+                        ),
+
+                        SizedBox(height: 20),
+
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => GoogleFormScreen()),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                            textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          child: const Text('Συμπλήρωσε το ερωτηματολόγιο'),
                         ),
 
                       ],
