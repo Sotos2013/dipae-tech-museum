@@ -1,9 +1,10 @@
 platform :ios, '15.5'
-
 use_frameworks!
 use_modular_headers!
 
+# Εισαγωγή του Flutter module
+load File.join(File.dirname(__FILE__), 'Flutter', 'flutter_export_environment.rb')
+
 target 'Runner' do
-  # Εισαγωγή Flutter build tool
   install_all_flutter_pods File.dirname(File.realpath(__FILE__))
 end
