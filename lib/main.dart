@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'qr_info_screen.dart';
 import 'qr_scanner_screen.dart';
-import 'google_form_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -133,21 +134,63 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  void _showAboutDialog() {
+  void _showAboutDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text("Σχετικά με την εφαρμογή"),
+          backgroundColor: const Color(0xFF224366), // Μπλε background
+          title: const Text(
+            "Σχετικά με την εφαρμογή",
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white, // Λευκός τίτλος
+            ),
+          ),
           content: const Text(
-            "Αυτή είναι μια εφαρμογή για το Τεχνολογικό Μουσείο του Διεθνούς Πανεπιστημίου της Ελλάδος. "
-                "Δημιουργήθηκε για να παρέχει πληροφορίες για εκθέματα μέσω QR Codes και ερωτήσεις πολλαπλής επιλογής για το κάθε έκθεμα."
-                "\n\nGitHub: https://github.com/Sotos2013/dipae-tech-museum",
+            "Αυτή είναι μια εφαρμογή για το Τεχνολογικό Μουσείο του Διεθνούς Πανεπιστημίου της Ελλάδος.\n"
+                "Δημιουργήθηκε για να παρέχει πληροφορίες για εκθέματα μέσω QR Codes και ερωτήσεις πολλαπλής επιλογής για το κάθε έκθεμα.",
+            style: TextStyle(fontSize: 16, color: Colors.white),
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("OK"),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // 🔗 Κουμπί GitHub
+                TextButton.icon(
+                  onPressed: () async {
+                    final Uri url = Uri.parse("https://github.com/Sotos2013/dipae-tech-museum");
+                    if (await canLaunchUrl(url)) {
+                      await launchUrl(url, mode: LaunchMode.externalApplication);
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Δεν ήταν δυνατή η φόρτωση του GitHub.')),
+                      );
+                    }
+                  },
+                  icon: const FaIcon(FontAwesomeIcons.github, color: Colors.white),
+                  label: const Text(
+                    "GitHub",
+                    style: TextStyle(fontSize: 16, color: Colors.white),
+                  ),
+                  style: TextButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+                // ❌ Κουμπί Κλείσιμο
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text(
+                    "OK",
+                    style: TextStyle(fontSize: 16, color: Colors.white),
+                  ),
+                ),
+              ],
             ),
           ],
         );
@@ -163,7 +206,7 @@ class _MyHomePageState extends State<MyHomePage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.info_outline, color: Colors.white),
-            onPressed: _showAboutDialog,
+            onPressed: () => _showAboutDialog(context), // Προσθήκη ανώνυμης συνάρτησης
           ),
         ],
       ),
@@ -361,11 +404,12 @@ class _MyHomePageState extends State<MyHomePage> {
                         SizedBox(height: 20),
 
                         ElevatedButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => GoogleFormScreen()),
-                            );
+                          onPressed: () async {
+                            final Uri url = Uri.parse("https://docs.google.com/forms/d/e/1FAIpQLSeve-CdFpu5gper6D2QnmHu6cs99fqvGeK7A2UCNmk6JRZWjQ/viewform");
+
+                            if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+                              throw 'Δεν ήταν δυνατή η φόρτωση του Google Form';
+                            }
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.red,
@@ -378,7 +422,6 @@ class _MyHomePageState extends State<MyHomePage> {
                           ),
                           child: const Text('Συμπλήρωσε το ερωτηματολόγιο'),
                         ),
-
                       ],
                     ),
                   ),

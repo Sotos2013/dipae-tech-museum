@@ -29,6 +29,7 @@ environment:
 # versions available, run `flutter pub outdated`.
 dependencies:
   http: ^1.3.0
+  font_awesome_flutter: ^10.6.0
   flutter:
     sdk: flutter
   webview_flutter: ^4.4.4
