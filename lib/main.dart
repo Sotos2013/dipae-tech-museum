@@ -1,3 +1,5 @@
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -38,7 +40,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// 🔥 **Splash Screen**
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
 
@@ -50,12 +51,44 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(seconds: 3), () {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const MyHomePage()),
-      );
-    });
+    _checkInternet();
+  }
+
+  Future<void> _checkInternet() async {
+    var connectivityResult = await Connectivity().checkConnectivity();
+    if (connectivityResult == ConnectivityResult.none) {
+      _showNoInternetDialog();
+    } else {
+      Future.delayed(const Duration(seconds: 3), () {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MyHomePage()),
+        );
+      });
+    }
+  }
+
+  void _showNoInternetDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Χωρίς Σύνδεση"),
+          content: const Text("Δεν υπάρχει διαθέσιμη σύνδεση στο διαδίκτυο. Παρακαλώ ελέγξτε τη σύνδεσή σας και προσπαθήστε ξανά."),
+          actions: [
+            TextButton(
+              onPressed: () => _checkInternet(),
+              child: const Text("Επαναπροσπάθεια"),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Έξοδος"),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -95,11 +128,13 @@ class _MyHomePageState extends State<MyHomePage> {
   List<Map<String, dynamic>> searchResults = [];
   bool isSearching = false;
   TextEditingController searchController = TextEditingController();
+  bool _isOffline = false;
 
   @override
   void initState() {
     super.initState();
     _fetchRandomExhibit();
+    _startMonitoring();
   }
 
   Future<void> _fetchRandomExhibit() async {
@@ -132,6 +167,38 @@ class _MyHomePageState extends State<MyHomePage> {
       searchResults = List<Map<String, dynamic>>.from(response);
       isSearching = true;
     });
+  }
+
+  late StreamSubscription _subscription;
+
+  void _startMonitoring() {
+    _subscription = Connectivity().onConnectivityChanged.listen((List<ConnectivityResult> results) {
+      final hasInternet = results.any((result) => result != ConnectivityResult.none);
+
+      setState(() {
+        _isOffline = !hasInternet;
+      });
+
+      if (_isOffline) {
+        _showNoInternetSnackbar();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _subscription.cancel(); // Ακυρώνουμε το StreamSubscription για αποφυγή memory leaks
+    super.dispose();
+  }
+
+  void _showNoInternetSnackbar() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Χάθηκε η σύνδεση στο διαδίκτυο!"),
+        duration: Duration(seconds: 3),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
 
   void _showAboutDialog(BuildContext context) {
@@ -218,215 +285,222 @@ class _MyHomePageState extends State<MyHomePage> {
             // Κλείνει το πληκτρολόγιο όταν ο χρήστης πατάει εκτός του πεδίου αναζήτησης
             FocusScope.of(context).unfocus();
           },
-          child: ListView(
-            padding: const EdgeInsets.all(20.0),
+          child: Stack(
             children: [
-              // 🔍 Πεδίο Αναζήτησης
-              TextField(
-                controller: searchController,
-                decoration: InputDecoration(
-                  labelText: "Αναζήτηση εκθέματος...",
-                  prefixIcon: const Icon(Icons.search),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-                onChanged: _searchExhibits,
-              ),
-              const SizedBox(height: 20),
-
-              // ✅ Αν γίνεται αναζήτηση, δείξε τα αποτελέσματα
-              if (isSearching)
-                if (searchResults.isEmpty)
-                  const Center(
-                    child: Text(
-                      "Δεν βρέθηκαν αποτελέσματα",
-                      style: TextStyle(color: Colors.white, fontSize: 16),
+              ListView(
+                padding: const EdgeInsets.all(20.0),
+                children: [
+                  // 🔍 Πεδίο Αναζήτησης
+                  TextField(
+                    controller: searchController,
+                    decoration: InputDecoration(
+                      labelText: "Αναζήτηση εκθέματος...",
+                      prefixIcon: const Icon(Icons.search),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                     ),
-                  )
-                else
-                  ...searchResults.map((exhibit) {
-                    return ListTile(
-                      title: Text(exhibit['name'], style: const TextStyle(color: Colors.white)),
-                      subtitle: Text(exhibit['description'], style: const TextStyle(color: Colors.white70)),
-                      leading: Image.network(
-                        exhibit['imageUrl'],
-                        width: 50,
-                        height: 50,
-                        fit: BoxFit.cover,
-                      ),
+                    onChanged: _searchExhibits,
+                  ),
+                  const SizedBox(height: 20),
+
+                  // ✅ Αν γίνεται αναζήτηση, δείξε τα αποτελέσματα
+                  if (isSearching)
+                    if (searchResults.isEmpty)
+                      const Center(
+                        child: Text(
+                          "Δεν βρέθηκαν αποτελέσματα",
+                          style: TextStyle(color: Colors.white, fontSize: 16),
+                        ),
+                      )
+                    else
+                      ...searchResults.map((exhibit) {
+                        return ListTile(
+                          title: Text(exhibit['name'], style: const TextStyle(color: Colors.white)),
+                          subtitle: Text(exhibit['description'], style: const TextStyle(color: Colors.white70)),
+                          leading: Image.network(
+                            exhibit['imageUrl'],
+                            width: 50,
+                            height: 50,
+                            fit: BoxFit.cover,
+                          ),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => QRInfoScreen(
+                                  id: exhibit['id'],
+                                  name: exhibit['name'],
+                                  description: exhibit['description'],
+                                  imageUrl: exhibit['imageUrl'],
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      }).toList()
+                  else if (randomExhibit != null) ...[
+                    // 🎲 Τυχαίο Έκθεμα της Ημέρας
+                    GestureDetector(
                       onTap: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => QRInfoScreen(
-                              id: exhibit['id'],
-                              name: exhibit['name'],
-                              description: exhibit['description'],
-                              imageUrl: exhibit['imageUrl'],
+                              id: randomExhibit!['id'],
+                              name: randomExhibit!['name'],
+                              description: randomExhibit!['description'],
+                              imageUrl: randomExhibit!['imageUrl'],
                             ),
                           ),
                         );
                       },
-                    );
-                  }).toList()
-              else if (randomExhibit != null) ...[
-                // 🎲 Τυχαίο Έκθεμα της Ημέρας
-                GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => QRInfoScreen(
-                          id: randomExhibit!['id'],
-                          name: randomExhibit!['name'],
-                          description: randomExhibit!['description'],
-                          imageUrl: randomExhibit!['imageUrl'],
-                        ),
-                      ),
-                    );
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF224366), // 🔵 Μπλε background
-                      borderRadius: BorderRadius.circular(15), // Προαιρετικά: rounded edges
-                    ),
-                    padding: const EdgeInsets.all(10), // Προσθέτει εσωτερικά περιθώρια
-                    child: Column(
-                      children: [
-                        // 🎲 Τυχαίο Έκθεμα της Ημέρας
-                        if (randomExhibit != null)
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => QRInfoScreen(
-                                    id: randomExhibit!['id'],
-                                    name: randomExhibit!['name'],
-                                    description: randomExhibit!['description'],
-                                    imageUrl: randomExhibit!['imageUrl'],
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // 🎲 Τυχαίο Έκθεμα της Ημέρας
+                          if (randomExhibit != null)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 20), // Αποφυγή επικαλύψεων
+                              child: GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => QRInfoScreen(
+                                        id: randomExhibit!['id'],
+                                        name: randomExhibit!['name'],
+                                        description: randomExhibit!['description'],
+                                        imageUrl: randomExhibit!['imageUrl'],
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: Card(
+                                  elevation: 5,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                                  child: Column(
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+                                        child: Image.network(
+                                          randomExhibit!['imageUrl'],
+                                          height: 150,
+                                          width: double.infinity,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ),
+                                      Padding(
+                                        padding: const EdgeInsets.all(10.0),
+                                        child: Text(
+                                          "🔍 Τυχαίο Έκθεμα: ${randomExhibit!['name']}",
+                                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              );
-                            },
-                            child: Card(
-                              elevation: 5,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                              ),
+                            ),
+
+                          // ℹ️ Πληροφορίες Μουσείου (ΔΕΝ ΕΙΝΑΙ TAPABLE!)
+                          IgnorePointer(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF005580), // 🔵 Μπλε background
+                                borderRadius: BorderRadius.circular(15),
+                              ),
+                              padding: const EdgeInsets.all(15),
                               child: Column(
-                                children: [
-                                  Image.network(
-                                    randomExhibit!['imageUrl'],
-                                    height: 150,
-                                    width: double.infinity,
-                                    fit: BoxFit.cover,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: const [
+                                  Text(
+                                    "🏛️ Μικρό Τεχνολογικό Μουσείο",
+                                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                                   ),
-                                  Padding(
-                                    padding: const EdgeInsets.all(10.0),
-                                    child: Text(
-                                      "🔍 Τυχαίο Έκθεμα: ${randomExhibit!['name']}",
-                                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                                    ),
+                                  SizedBox(height: 10),
+                                  Text(
+                                    "Σας καλωσορίζουμε στο Μικρό Τεχνολογικό Μουσείο του ΔΙΠΑΕ, "
+                                        "έναν μοναδικό εκθεσιακό χώρο μέσα σε ένα παλιό βαγόνι τρένου! "
+                                        "Εδώ, η ιστορία της τεχνολογίας ζωντανεύει, "
+                                        "συνδέοντας το παρελθόν με το παρόν και το μέλλον.",
+                                    style: TextStyle(fontSize: 16, color: Colors.white),
+                                  ),
+                                  SizedBox(height: 15),
+                                  Text(
+                                    "🚂 Ένα Βαγόνι, Μια Ιστορία",
+                                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                                  ),
+                                  SizedBox(height: 10),
+                                  Text(
+                                    "Το μουσείο στεγάζεται σε ένα αναπαλαιωμένο βαγόνι τρένου, "
+                                        "συμβολίζοντας το ταξίδι της τεχνολογικής εξέλιξης. "
+                                        "Μέσα σε αυτόν τον ιδιαίτερο χώρο, κάθε αντικείμενο αφηγείται τη δική του ιστορία, "
+                                        "προκαλώντας σας σε ένα ταξίδι γνώσης και ανακάλυψης.",
+                                    style: TextStyle(fontSize: 16, color: Colors.white),
+                                  ),
+                                  SizedBox(height: 15),
+                                  Text(
+                                    "🔎 Τι θα ανακαλύψετε;",
+                                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                                  ),
+                                  SizedBox(height: 10),
+                                  Text(
+                                    "📌 Ιστορικές Συσκευές & Υπολογιστές\n"
+                                        "   • Από τις πρώτες αριθμομηχανές έως τους πρώτους προσωπικούς υπολογιστές\n"
+                                        "📡 Τηλεπικοινωνίες\n"
+                                        "   • Ραδιόφωνα, τηλέφωνα και άλλες συσκευές που άλλαξαν τον τρόπο επικοινωνίας\n"
+                                        "🔬 Επιστημονικά Όργανα\n"
+                                        "   • Εργαλεία που χρησιμοποιήθηκαν για έρευνα και καινοτομία",
+                                    style: TextStyle(fontSize: 16, color: Colors.white),
                                   ),
                                 ],
                               ),
                             ),
                           ),
 
-                        const SizedBox(height: 20),
+                          const SizedBox(height: 20),
 
-                        // ℹ️ Πληροφορίες Μουσείου (ΜΕ ΜΠΛΕ BACKGROUND)
-                        Container(
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF005580), // 🔵 Μπλε background
-                            borderRadius: BorderRadius.circular(15), // Προαιρετικά: rounded edges
+                          // 🏛️ **Λογότυπο ΔΙΠΑΕ**
+                          Image.asset(
+                            'assets/ihu_logo.png',
+                            height: 80,
                           ),
-                          padding: const EdgeInsets.all(15), // Προσθέτει εσωτερικά περιθώρια
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
-                              Text(
-                                "🏛️ Μικρό Τεχνολογικό Μουσείο",
-                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                              ),
-                              SizedBox(height: 10),
-                              Text(
-                                "Σας καλωσορίζουμε στο Μικρό Τεχνολογικό Μουσείο του ΔΙΠΑΕ, "
-                                    "έναν μοναδικό εκθεσιακό χώρο μέσα σε ένα παλιό βαγόνι τρένου! "
-                                    "Εδώ, η ιστορία της τεχνολογίας ζωντανεύει, "
-                                    "συνδέοντας το παρελθόν με το παρόν και το μέλλον.",
-                                style: TextStyle(fontSize: 16, color: Colors.white),
-                              ),
-                              SizedBox(height: 15),
-                              Text(
-                                "🚂 Ένα Βαγόνι, Μια Ιστορία",
-                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                              ),
-                              SizedBox(height: 10),
-                              Text(
-                                "Το μουσείο στεγάζεται σε ένα αναπαλαιωμένο βαγόνι τρένου, "
-                                    "συμβολίζοντας το ταξίδι της τεχνολογικής εξέλιξης. "
-                                    "Μέσα σε αυτόν τον ιδιαίτερο χώρο, κάθε αντικείμενο αφηγείται τη δική του ιστορία, "
-                                    "προκαλώντας σας σε ένα ταξίδι γνώσης και ανακάλυψης.",
-                                style: TextStyle(fontSize: 16, color: Colors.white),
-                              ),
-                              SizedBox(height: 15),
-                              Text(
-                                "🔎 Τι θα ανακαλύψετε;",
-                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                              ),
-                              SizedBox(height: 10),
-                              Text(
-                                "📌 Ιστορικές Συσκευές & Υπολογιστές\n"
-                                    "   • Από τις πρώτες αριθμομηχανές έως τους πρώτους προσωπικούς υπολογιστές\n"
-                                    "📡 Τηλεπικοινωνίες\n"
-                                    "   • Ραδιόφωνα, τηλέφωνα και άλλες συσκευές που άλλαξαν τον τρόπο επικοινωνίας\n"
-                                    "🔬 Επιστημονικά Όργανα\n"
-                                    "   • Εργαλεία που χρησιμοποιήθηκαν για έρευνα και καινοτομία",
-                                style: TextStyle(fontSize: 16, color: Colors.white),
-                              ),
-                            ],
+                          const Text(
+                            "Διεθνές Πανεπιστήμιο της Ελλάδος",
+                            style: TextStyle(fontSize: 16, color: Colors.white),
                           ),
-                        ),
 
-                        const SizedBox(height: 20),
+                          const SizedBox(height: 20),
 
-                        // 🏛️ **Λογότυπο ΔΙΠΑΕ**
-                        Image.asset(
-                          'assets/ihu_logo.png',
-                          height: 80,
-                        ),
-                        Text(
-                          "Διεθνές Πανεπιστήμιο της Ελλάδος",
-                          style: TextStyle(fontSize: 16, color: Colors.white),
-                        ),
+                          // 🔴 Google Form Button
+                          ElevatedButton(
+                            onPressed: () async {
+                              final Uri url = Uri.parse("https://docs.google.com/forms/d/e/1FAIpQLSeve-CdFpu5gper6D2QnmHu6cs99fqvGeK7A2UCNmk6JRZWjQ/viewform");
 
-                        SizedBox(height: 20),
-
-                        ElevatedButton(
-                          onPressed: () async {
-                            final Uri url = Uri.parse("https://docs.google.com/forms/d/e/1FAIpQLSeve-CdFpu5gper6D2QnmHu6cs99fqvGeK7A2UCNmk6JRZWjQ/viewform");
-
-                            if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-                              throw 'Δεν ήταν δυνατή η φόρτωση του Google Form';
-                            }
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                            textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
+                              if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Δεν ήταν δυνατή η φόρτωση του Google Form')),
+                                );
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                              textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
                             ),
+                            child: const Text('Συμπλήρωσε το ερωτηματολόγιο'),
                           ),
-                          child: const Text('Συμπλήρωσε το ερωτηματολόγιο'),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ),
-              ],
+                  ],
+                ],
+              ),
             ],
           ),
         ),

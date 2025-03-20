@@ -17,6 +17,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
   bool _isScanning = true;
   bool _hasShownNoInternetMessage = false;
   bool _isFlashOn = false;
+  bool _hasShownInvalidQrMessage = false; // Προστέθηκε νέα μεταβλητή
   Timer? _debounceTimer;
 
   @override
@@ -82,23 +83,31 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
         );
       } else {
         print("❌ Δεν βρέθηκε καμία εγγραφή στο Supabase!");
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              '❌ Μη έγκυρο QR Code!',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+
+        if (!_hasShownInvalidQrMessage) {
+          _hasShownInvalidQrMessage = true; // Αποτρέπει την πολλαπλή εμφάνιση του μηνύματος
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                '❌ Μη έγκυρο QR Code!',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 3),
             ),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 3),
-          ),
-        );
+          );
+
+          Future.delayed(const Duration(seconds: 3), () {
+            _hasShownInvalidQrMessage = false; // Επαναφέρει τη μεταβλητή μετά από 3 δευτερόλεπτα
+          });
+        }
       }
     } catch (e) {
       print("❌ Σφάλμα κατά την αναζήτηση QR Code: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('⚠️ Σφάλμα κατά την επικοινωνία με τη βάση δεδομένων.'),
-          backgroundColor: Colors.orange,
+          content: Text('❌ Σφάλμα κατά την αναζήτηση QR Code!'),
+          backgroundColor: Colors.red,
         ),
       );
     }
