@@ -335,27 +335,53 @@ class _MyHomePageState extends State<MyHomePage> {
                     else
                       ...searchResults.map((exhibit) {
                         return ListTile(
-                          title: Text(exhibit['name'] ?? 'Άγνωστο', style: const TextStyle(color: Colors.white)),
-                          subtitle: Text(exhibit['description'] ?? 'Δεν υπάρχει διαθέσιμη περιγραφή.', style: const TextStyle(color: Colors.white70)),
-                          leading: Image.network(
-                            randomExhibit?['imageUrl'] ?? 'https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg',
-                            height: 150,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                          ),
-                            onTap: () {
+                          onTap: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (context) => QRInfoScreen(
-                                  id: exhibit['id'] ?? 'unknown_id',
-                                  name: exhibit['name'] ?? 'Άγνωστο Έκθεμα',
-                                  description: exhibit['description'] ?? 'Δεν υπάρχει διαθέσιμη περιγραφή.',
-                                  imageUrl: exhibit['imageUrl'] ?? 'https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg',
+                                  id: exhibit['id'],
+                                  name: exhibit['name'],
+                                  description: exhibit['description'],
+                                  imageUrl: exhibit['imageUrl'],
                                 ),
                               ),
                             );
                           },
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), // Προσθήκη padding για καλύτερη εμφάνιση
+                          title: Row(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.network(
+                                  exhibit['imageUrl'],
+                                  width: 50,
+                                  height: 50,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return const Icon(Icons.broken_image, size: 50, color: Colors.red);
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 10), // Απόσταση εικόνας από το κείμενο
+                              Expanded(
+                                child: Text(
+                                  exhibit['name'],
+                                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  softWrap: true,
+                                ),
+                              ),
+                            ],
+                          ),
+                          subtitle: Text(
+                            exhibit['description'],
+                            style: const TextStyle(fontSize: 14, color: Colors.white70),
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                            softWrap: true,
+                          ),
                         );
                       })
                   else if (randomExhibit != null) ...[
