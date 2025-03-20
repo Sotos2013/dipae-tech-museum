@@ -59,7 +59,8 @@ class _SplashScreenState extends State<SplashScreen> {
     if (connectivityResult == ConnectivityResult.none) {
       _showNoInternetDialog();
     } else {
-      Future.delayed(const Duration(seconds: 3), () {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return; // ✅ Αποτρέπει σφάλματα αν το widget έχει αποσυναρμολογηθεί
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const MyHomePage()),
@@ -139,14 +140,22 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> _fetchRandomExhibit() async {
     final response = await Supabase.instance.client
-        .rpc('get_random_exhibit') // 🔥 Παίρνουμε ένα τυχαίο έκθεμα
+        .rpc('get_random_exhibit')
         .maybeSingle();
 
-    if (response != null) {
-      setState(() {
-        randomExhibit = response;
-      });
+    if (response == null) {
+      print("⚠️ Δεν βρέθηκε τυχαίο έκθεμα!");
+      return;
     }
+
+    setState(() {
+      randomExhibit = {
+        "id": response["id"] ?? "unknown_id",
+        "name": response["name"] ?? "Άγνωστο Έκθεμα",
+        "description": response["description"] ?? "Δεν υπάρχει διαθέσιμη περιγραφή.",
+        "imageUrl": response["imageUrl"] ?? "https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg"
+      };
+    });
   }
 
   Future<void> _searchExhibits(String query) async {
@@ -164,7 +173,17 @@ class _MyHomePageState extends State<MyHomePage> {
         .ilike('name', '%$query%');
 
     setState(() {
-      searchResults = List<Map<String, dynamic>>.from(response);
+      print("🔍 Random Exhibit: $randomExhibit");
+      print("🔍 Search Results: $searchResults");
+
+    searchResults = List<Map<String, dynamic>>.from(response)
+          .map((exhibit) => {
+        "id": exhibit["id"] ?? "unknown_id",
+        "name": exhibit["name"] ?? "Άγνωστο Έκθεμα",
+        "description": exhibit["description"] ?? "Δεν υπάρχει διαθέσιμη περιγραφή.",
+        "imageUrl": exhibit["imageUrl"] ?? "https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg"
+      })
+          .toList();
       isSearching = true;
     });
   }
@@ -316,29 +335,29 @@ class _MyHomePageState extends State<MyHomePage> {
                     else
                       ...searchResults.map((exhibit) {
                         return ListTile(
-                          title: Text(exhibit['name'], style: const TextStyle(color: Colors.white)),
-                          subtitle: Text(exhibit['description'], style: const TextStyle(color: Colors.white70)),
+                          title: Text(exhibit['name'] ?? 'Άγνωστο', style: const TextStyle(color: Colors.white)),
+                          subtitle: Text(exhibit['description'] ?? 'Δεν υπάρχει διαθέσιμη περιγραφή.', style: const TextStyle(color: Colors.white70)),
                           leading: Image.network(
-                            exhibit['imageUrl'],
-                            width: 50,
-                            height: 50,
+                            randomExhibit?['imageUrl'] ?? 'https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg',
+                            height: 150,
+                            width: double.infinity,
                             fit: BoxFit.cover,
                           ),
-                          onTap: () {
+                            onTap: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (context) => QRInfoScreen(
-                                  id: exhibit['id'],
-                                  name: exhibit['name'],
-                                  description: exhibit['description'],
-                                  imageUrl: exhibit['imageUrl'],
+                                  id: exhibit['id'] ?? 'unknown_id',
+                                  name: exhibit['name'] ?? 'Άγνωστο Έκθεμα',
+                                  description: exhibit['description'] ?? 'Δεν υπάρχει διαθέσιμη περιγραφή.',
+                                  imageUrl: exhibit['imageUrl'] ?? 'https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg',
                                 ),
                               ),
                             );
                           },
                         );
-                      }).toList()
+                      })
                   else if (randomExhibit != null) ...[
                     // 🎲 Τυχαίο Έκθεμα της Ημέρας
                     GestureDetector(
@@ -347,13 +366,15 @@ class _MyHomePageState extends State<MyHomePage> {
                           context,
                           MaterialPageRoute(
                             builder: (context) => QRInfoScreen(
-                              id: randomExhibit!['id'],
-                              name: randomExhibit!['name'],
-                              description: randomExhibit!['description'],
-                              imageUrl: randomExhibit!['imageUrl'],
+                              id: randomExhibit!['id'] ?? 'Άγνωστο Έκθεμα',
+                              name: randomExhibit!['name'] ?? 'Άγνωστο Έκθεμα',
+                              description: randomExhibit!['description'] ?? 'Δεν υπάρχει διαθέσιμη περιγραφή.',
+                              imageUrl: randomExhibit!['imageUrl'] ?? 'https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg',
                             ),
                           ),
-                        );
+                        ).then((_) {
+                          _fetchRandomExhibit(); // 🔄 Επαναφέρει το τυχαίο έκθεμα όταν ο χρήστης επιστρέψει
+                        });
                       },
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.center,
@@ -368,13 +389,15 @@ class _MyHomePageState extends State<MyHomePage> {
                                     context,
                                     MaterialPageRoute(
                                       builder: (context) => QRInfoScreen(
-                                        id: randomExhibit!['id'],
-                                        name: randomExhibit!['name'],
-                                        description: randomExhibit!['description'],
-                                        imageUrl: randomExhibit!['imageUrl'],
+                                        id: randomExhibit!['id'] ?? 'unknown_id',
+                                        name: randomExhibit!['name'] ?? 'Άγνωστο Έκθεμα',
+                                        description: randomExhibit!['description'] ?? 'Δεν υπάρχει διαθέσιμη περιγραφή.',
+                                        imageUrl: randomExhibit!['imageUrl'] ?? 'https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg',
                                       ),
                                     ),
-                                  );
+                                  ).then((_) {
+                                    _fetchRandomExhibit(); // 🔄 Επαναφέρει το τυχαίο έκθεμα όταν ο χρήστης επιστρέψει
+                                  });
                                 },
                                 child: Card(
                                   elevation: 5,
@@ -393,7 +416,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                       Padding(
                                         padding: const EdgeInsets.all(10.0),
                                         child: Text(
-                                          "🔍 Τυχαίο Έκθεμα: ${randomExhibit!['name']}",
+                                          "🔍 Τυχαίο Έκθεμα: ${randomExhibit?['name'] ?? 'Άγνωστο Έκθεμα'}",
                                           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                                         ),
                                       ),
