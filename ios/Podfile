@@ -1,10 +1,22 @@
-platform :ios, '15.5'
-use_frameworks!
-use_modular_headers!
+# Uncomment this line to define a global platform for your project
+platform :ios, '12.0'
 
-# Εισαγωγή του Flutter module
-load File.join(File.dirname(__FILE__), 'Flutter', 'flutter_export_environment.rb')
+# CocoaPods analytics sends network stats synchronously affecting flutter build latency.
+ENV['COCOAPODS_DISABLE_STATS'] = 'true'
+
+project 'Runner', {
+  'Debug' => :debug,
+  'Profile' => :release,
+  'Release' => :release,
+}
+
+def flutter_installation
+  generated_xcode_build_settings = File.expand_path(File.join('Flutter', 'Generated.xcconfig'), __dir__)
+  raise "#{generated_xcode_build_settings} must exist. Run 'flutter pub get' first." unless File.exist?(generated_xcode_build_settings)
+
+  eval(File.read(File.join(__dir__, 'Flutter', 'podhelper.rb')), binding)
+end
 
 target 'Runner' do
-  install_all_flutter_pods File.dirname(File.realpath(__FILE__))
+  flutter_installation
 end
