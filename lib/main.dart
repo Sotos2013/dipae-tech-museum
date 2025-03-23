@@ -328,7 +328,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     if (searchResults.isEmpty)
                       const Center(
                         child: Text(
-                          "Δεν βρέθηκαν αποτελέσματα",
+                          "❌ Δεν βρέθηκαν αποτελέσματα",
                           style: TextStyle(color: Colors.white, fontSize: 16),
                         ),
                       )
