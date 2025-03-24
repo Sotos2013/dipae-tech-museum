@@ -6,6 +6,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'qr_info_screen.dart';
 import 'qr_scanner_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,6 +37,16 @@ class MyApp extends StatelessWidget {
           backgroundColor: Color(0xFFD41C1C),
         ),
       ),
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('el'), // Ελληνικά
+        Locale('en'), // Αγγλικά
+      ],
       home: const SplashScreen(),
     );
   }
@@ -102,8 +114,8 @@ class _SplashScreenState extends State<SplashScreen> {
           children: [
             const Icon(Icons.museum, size: 100, color: Colors.white),
             const SizedBox(height: 20),
-            const Text(
-              "Καλώς ήρθατε στο Τεχνολογικό Μουσείο του ΔΙΠΑΕ",
+            Text(
+              AppLocalizations.of(context)!.welcomeMessage,
               style: TextStyle(fontSize: 20, color: Colors.white),
               textAlign: TextAlign.center,
             ),
