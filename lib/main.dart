@@ -1,5 +1,6 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -18,35 +19,56 @@ void main() async {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+// 🔁 Κάνε το Stateful για δυναμική αλλαγή γλώσσας
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  static void setLocale(BuildContext context, Locale newLocale) {
+    final _MyAppState? state = context.findAncestorStateOfType<_MyAppState>();
+    state?.setLocale(newLocale);
+  }
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  Locale _locale = const Locale('el'); // default Greek
+
+  void setLocale(Locale newLocale) {
+    setState(() {
+      _locale = newLocale;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
       title: 'Τεχνολογικό Μουσείο ΔΙΠΑΕ',
+      debugShowCheckedModeBanner: false,
+      locale: _locale,
+      supportedLocales: const [
+        Locale('el'), // 🇬🇷 Ελληνικά
+        Locale('en'), // 🇬🇧 Αγγλικά
+      ],
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ],
       theme: ThemeData(
         primaryColor: const Color(0xFFD41C1C),
         scaffoldBackgroundColor: const Color(0xFF224366),
         appBarTheme: const AppBarTheme(
           backgroundColor: Color(0xFFD41C1C),
-          titleTextStyle: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+          titleTextStyle: TextStyle(
+              color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
         ),
         floatingActionButtonTheme: const FloatingActionButtonThemeData(
           backgroundColor: Color(0xFFD41C1C),
         ),
       ),
-      localizationsDelegates: const [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: const [
-        Locale('el'), // Ελληνικά
-        Locale('en'), // Αγγλικά
-      ],
       home: const SplashScreen(),
     );
   }
@@ -63,45 +85,17 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _checkInternet();
-  }
 
-  Future<void> _checkInternet() async {
-    var connectivityResult = await Connectivity().checkConnectivity();
-    if (connectivityResult == ConnectivityResult.none) {
-      _showNoInternetDialog();
-    } else {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return; // ✅ Αποτρέπει σφάλματα αν το widget έχει αποσυναρμολογηθεί
+    // Εκτελείται αφού φορτωθεί πλήρως η πρώτη frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(seconds: 3), () {
+        if (!mounted) return;
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const MyHomePage()),
+          MaterialPageRoute(builder: (context) => const ConnectionCheckScreen()),
         );
       });
-    }
-  }
-
-  void _showNoInternetDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text("Χωρίς Σύνδεση"),
-          content: const Text("Δεν υπάρχει διαθέσιμη σύνδεση στο διαδίκτυο. Παρακαλώ ελέγξτε τη σύνδεσή σας και προσπαθήστε ξανά."),
-          actions: [
-            TextButton(
-              onPressed: () => _checkInternet(),
-              child: const Text("Επαναπροσπάθεια"),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Έξοδος"),
-            ),
-          ],
-        );
-      },
-    );
+    });
   }
 
   @override
@@ -111,16 +105,79 @@ class _SplashScreenState extends State<SplashScreen> {
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.museum, size: 100, color: Colors.white),
-            const SizedBox(height: 20),
+          children: const [
+            Icon(Icons.museum, size: 100, color: Colors.white),
+            SizedBox(height: 20),
             Text(
-              AppLocalizations.of(context)!.welcomeMessage,
+              "Καλώς ήρθατε στο Τεχνολογικό Μουσείο του ΔΙΠΑΕ",
               style: TextStyle(fontSize: 20, color: Colors.white),
               textAlign: TextAlign.center,
             ),
+            SizedBox(height: 10),
+            CircularProgressIndicator(color: Colors.white),
+          ],
+        ),
+      ),
+    );
+  }
+}
+class ConnectionCheckScreen extends StatefulWidget {
+  const ConnectionCheckScreen({Key? key}) : super(key: key);
+
+  @override
+  _ConnectionCheckScreenState createState() => _ConnectionCheckScreenState();
+}
+
+class _ConnectionCheckScreenState extends State<ConnectionCheckScreen> {
+  bool _isChecking = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      checkInternet();
+    });
+  }
+
+  Future<void> checkInternet() async {
+    final result = await Connectivity().checkConnectivity();
+    final hasInternet = result != ConnectivityResult.none;
+
+    if (!mounted) return;
+
+    if (hasInternet) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const MyHomePage()),
+      );
+    } else {
+      setState(() => _isChecking = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: _isChecking
+          ? const Center(child: CircularProgressIndicator())
+          : Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.wifi_off, size: 80, color: Colors.red),
+            const SizedBox(height: 20),
+            const Text(
+              "No Internet Connection",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 10),
-            const CircularProgressIndicator(color: Colors.white),
+            const Text("Please connect to the internet and try again."),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: checkInternet,
+              child: const Text("Retry"),
+            ),
           ],
         ),
       ),
