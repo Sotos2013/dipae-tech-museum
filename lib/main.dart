@@ -1,5 +1,7 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/foundation.dart';
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -8,8 +10,6 @@ import 'qr_scanner_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-
-import 'splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -75,6 +75,134 @@ class _MyAppState extends State<MyApp> {
   }
 }
 
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({Key? key}) : super(key: key);
+
+  @override
+  _SplashScreenState createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+
+    // Εκτελείται αφού φορτωθεί πλήρως η πρώτη frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(seconds: 3), () {
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const ConnectionCheckScreen()),
+        );
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF005580),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+            Icon(Icons.museum, size: 100, color: Colors.white),
+            SizedBox(height: 20),
+            Text(
+              "Καλώς ήρθατε στο Τεχνολογικό Μουσείο του ΔΙΠΑΕ",
+              style: TextStyle(fontSize: 20, color: Colors.white),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 10),
+            CircularProgressIndicator(color: Colors.white),
+          ],
+        ),
+      ),
+    );
+  }
+}
+class ConnectionCheckScreen extends StatefulWidget {
+  const ConnectionCheckScreen({Key? key}) : super(key: key);
+
+  @override
+  _ConnectionCheckScreenState createState() => _ConnectionCheckScreenState();
+}
+
+class _ConnectionCheckScreenState extends State<ConnectionCheckScreen> {
+  bool _isChecking = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkInternet();
+    });
+  }
+
+  Future<void> _checkInternet() async {
+    bool hasInternet = false;
+
+    if (kIsWeb) {
+      hasInternet = true; // Web workaround
+    } else {
+      hasInternet = await _hasRealInternet();
+    }
+
+    if (!mounted) return;
+
+    if (hasInternet) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const MyHomePage()),
+        );
+      });
+    } else {
+      setState(() => _isChecking = false);
+    }
+  }
+
+  Future<bool> _hasRealInternet() async {
+    try {
+      final result = await InternetAddress.lookup('google.com');
+      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+    } catch (_) {
+      return false;
+    }
+  }
+
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: _isChecking
+          ? const Center(child: CircularProgressIndicator())
+          : Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.wifi_off, size: 80, color: Colors.red),
+            const SizedBox(height: 20),
+            const Text(
+              "No Internet Connection",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            const Text("Please connect to the internet and try again."),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _checkInternet,
+              child: const Text("Retry"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 // ✅ **Αρχική Οθόνη**
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
@@ -93,43 +221,28 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-
-    Connectivity().checkConnectivity().then((result) {
-      if (result != ConnectivityResult.none) {
-        _fetchRandomExhibit();
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Δεν υπάρχει σύνδεση στο διαδίκτυο."),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    });
+    _fetchRandomExhibit();
+    _startMonitoring();
   }
 
   Future<void> _fetchRandomExhibit() async {
-    try {
-      final response = await Supabase.instance.client
-          .rpc('get_random_exhibit')
-          .maybeSingle();
+    final response = await Supabase.instance.client
+        .rpc('get_random_exhibit')
+        .maybeSingle();
 
-      if (response != null) {
-        setState(() {
-          randomExhibit = {
-            "id": response["id"] ?? "unknown_id",
-            "name": response["name"] ?? "Άγνωστο Έκθεμα",
-            "description": response["description"] ?? "Δεν υπάρχει περιγραφή.",
-            "imageUrl": response["imageUrl"] ?? "https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg"
-          };
-        });
-      }
-    } catch (e) {
-      debugPrint("❌ Supabase error: $e");
-      if (mounted) {
-        _startMonitoring();
-      }
+    if (response == null) {
+      print("⚠️ Δεν βρέθηκε τυχαίο έκθεμα!");
+      return;
     }
+
+    setState(() {
+      randomExhibit = {
+        "id": response["id"] ?? "unknown_id",
+        "name": response["name"] ?? "Άγνωστο Έκθεμα",
+        "description": response["description"] ?? "Δεν υπάρχει διαθέσιμη περιγραφή.",
+        "imageUrl": response["imageUrl"] ?? "https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg"
+      };
+    });
   }
 
   Future<void> _searchExhibits(String query) async {
@@ -150,7 +263,7 @@ class _MyHomePageState extends State<MyHomePage> {
       print("🔍 Random Exhibit: $randomExhibit");
       print("🔍 Search Results: $searchResults");
 
-    searchResults = List<Map<String, dynamic>>.from(response)
+      searchResults = List<Map<String, dynamic>>.from(response)
           .map((exhibit) => {
         "id": exhibit["id"] ?? "unknown_id",
         "name": exhibit["name"] ?? "Άγνωστο Έκθεμα",
