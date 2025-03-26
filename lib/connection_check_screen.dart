@@ -1,6 +1,8 @@
-import 'dart:io';
+import 'dart:io' show InternetAddress, SocketException;
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+
 import 'main.dart';
 
 class ConnectionCheckScreen extends StatefulWidget {
@@ -26,22 +28,32 @@ class _ConnectionCheckScreenState extends State<ConnectionCheckScreen> {
 
     final connectivityResult = await Connectivity().checkConnectivity();
 
+    if (!mounted) return;
+
     if (connectivityResult == ConnectivityResult.none) {
       setState(() => _isChecking = false);
       return;
     }
 
+    if (kIsWeb) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const MyHomePage()),
+      );
+      return;
+    }
+
     try {
-      final result = await InternetAddress.lookup('google.com');
+      final result = await InternetAddress.lookup('example.com');
       if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
-        if (!mounted) return;
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const MyHomePage()),
         );
         return;
       }
-    } on SocketException catch (_) {
+    } on SocketException {
+      // Fallthrough
     }
 
     setState(() => _isChecking = false);
