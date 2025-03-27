@@ -3,6 +3,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:async';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'qr_info_screen.dart';
 
 class QRScannerScreen extends StatefulWidget {
@@ -17,7 +18,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
   bool _isScanning = true;
   bool _hasShownNoInternetMessage = false;
   bool _isFlashOn = false;
-  bool _hasShownInvalidQrMessage = false; // Προστέθηκε νέα μεταβλητή
+  bool _hasShownInvalidQrMessage = false;
   Timer? _debounceTimer;
 
   @override
@@ -40,9 +41,9 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
       if (!_hasShownNoInternetMessage) {
         _hasShownNoInternetMessage = true;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text(
-              'Δεν υπάρχει σύνδεση στο Internet!',
+              AppLocalizations.of(context)!.noInternetMessage,
               style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
             ),
             backgroundColor: Colors.red,
@@ -87,9 +88,9 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
         if (!_hasShownInvalidQrMessage) {
           _hasShownInvalidQrMessage = true; // Αποτρέπει την πολλαπλή εμφάνιση του μηνύματος
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               content: Text(
-                '❌ Μη έγκυρο QR Code!',
+                AppLocalizations.of(context)!.invalidQrMessage,
                 style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
               ),
               backgroundColor: Colors.red,
@@ -105,8 +106,8 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
     } catch (e) {
       print("❌ Σφάλμα κατά την αναζήτηση QR Code: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('❌ Σφάλμα κατά την αναζήτηση QR Code!'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.qrSearchError),
           backgroundColor: Colors.red,
         ),
       );
@@ -118,8 +119,8 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF224366),
-        title: const Text(
-          'Εύρεση QR εκθέματος',
+        title: Text(
+          AppLocalizations.of(context)!.qrScannerTitle,
           style: TextStyle(color: Colors.white),
         ),
         actions: [

@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'qr_info_screen.dart';
 import 'qr_scanner_screen.dart';
@@ -36,7 +37,23 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   Locale _locale = const Locale('el'); // default Greek
 
-  void setLocale(Locale newLocale) {
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedLocale();
+  }
+
+  Future<void> _loadSavedLocale() async {
+    final prefs = await SharedPreferences.getInstance();
+    final langCode = prefs.getString('language_code') ?? 'el';
+    setState(() {
+      _locale = Locale(langCode);
+    });
+  }
+
+  void setLocale(Locale newLocale) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('language_code', newLocale.languageCode);
     setState(() {
       _locale = newLocale;
     });
@@ -176,21 +193,21 @@ class _ConnectionCheckScreenState extends State<ConnectionCheckScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Color(0xFF005580),
       body: _isChecking
           ? const Center(child: CircularProgressIndicator())
           : Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.wifi_off, size: 80, color: Colors.red),
+            const Icon(Icons.signal_wifi_connected_no_internet_4, size: 80, color: Colors.red),
             const SizedBox(height: 20),
             const Text(
               "No Internet Connection",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
             ),
             const SizedBox(height: 10),
-            const Text("Please connect to the internet and try again."),
+            const Text("Please connect to the internet and try again.", style: TextStyle(color: Colors.white),),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _checkInternet,
@@ -313,18 +330,16 @@ class _MyHomePageState extends State<MyHomePage> {
       builder: (context) {
         return AlertDialog(
           backgroundColor: const Color(0xFF224366), // Μπλε background
-          title: const Text(
-            "Σχετικά με την εφαρμογή",
+          title: Text(
+            AppLocalizations.of(context)!.aboutAppTitle,
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: Colors.white, // Λευκός τίτλος
             ),
           ),
-          content: const Text(
-            "Αυτή είναι μια εφαρμογή για το Τεχνολογικό Μουσείο του Διεθνούς Πανεπιστημίου της Ελλάδος.\n"
-                "Δημιουργήθηκε για να παρέχει πληροφορίες για εκθέματα μέσω QR Codes και ερωτήσεις πολλαπλής επιλογής για το κάθε έκθεμα.",
-            style: TextStyle(fontSize: 16, color: Colors.white),
+          content: Text(AppLocalizations.of(context)!.museumDes,
+            style: const TextStyle(fontSize: 16, color: Colors.white),
           ),
           actions: [
             Row(
@@ -338,7 +353,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       await launchUrl(url, mode: LaunchMode.externalApplication);
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Δεν ήταν δυνατή η φόρτωση του GitHub.')),
+                        SnackBar(content: Text(AppLocalizations.of(context)!.noGithub)),
                       );
                     }
                   },
@@ -375,11 +390,19 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Τεχνολογικό Μουσείο ΔΙΠΑΕ"),
+        title: Text(AppLocalizations.of(context)!.museumTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.info_outline, color: Colors.white),
-            onPressed: () => _showAboutDialog(context), // Προσθήκη ανώνυμης συνάρτησης
+            onPressed: () => _showAboutDialog(context),
+          ),
+          IconButton(
+            icon: const Icon(Icons.language, color: Colors.white),
+            onPressed: () {
+              final currentLang = Localizations.localeOf(context).languageCode;
+              final newLocale = currentLang == 'el' ? const Locale('en') : const Locale('el');
+              MyApp.setLocale(context, newLocale);
+            },
           ),
         ],
       ),
@@ -400,7 +423,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   TextField(
                     controller: searchController,
                     decoration: InputDecoration(
-                      labelText: "Αναζήτηση εκθέματος...",
+                      labelText: AppLocalizations.of(context)!.searchPlaceholder,
                       prefixIcon: const Icon(Icons.search),
                       filled: true,
                       fillColor: Colors.white,
@@ -413,10 +436,10 @@ class _MyHomePageState extends State<MyHomePage> {
                   // ✅ Αν γίνεται αναζήτηση, δείξε τα αποτελέσματα
                   if (isSearching)
                     if (searchResults.isEmpty)
-                      const Center(
+                      Center(
                         child: Text(
-                          "❌ Δεν βρέθηκαν αποτελέσματα",
-                          style: TextStyle(color: Colors.white, fontSize: 16),
+                            AppLocalizations.of(context)!.noResults,
+                          style: const TextStyle(color: Colors.white, fontSize: 16),
                         ),
                       )
                     else
@@ -529,7 +552,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                       Padding(
                                         padding: const EdgeInsets.all(10.0),
                                         child: Text(
-                                          "🔍 Τυχαίο Έκθεμα: ${randomExhibit?['name'] ?? 'Άγνωστο Έκθεμα'}",
+                                          "${AppLocalizations.of(context)!.randomExhibit} :"" ${randomExhibit?['name'] ?? 'Άγνωστο Έκθεμα'}",
                                           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                                         ),
                                       ),
@@ -549,45 +572,34 @@ class _MyHomePageState extends State<MyHomePage> {
                               padding: const EdgeInsets.all(15),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
-                                children: const [
+                                children: [
                                   Text(
-                                    "🏛️ Μικρό Τεχνολογικό Μουσείο",
+                                    AppLocalizations.of(context)!.museumInfoTitle,
+                                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    AppLocalizations.of(context)!.museumInfo1,
+                                    style: const TextStyle(fontSize: 16, color: Colors.white),
+                                  ),
+                                  const SizedBox(height: 15),
+                                  Text(
+                                    AppLocalizations.of(context)!.trainStoryTitle,
                                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                                   ),
-                                  SizedBox(height: 10),
+                                  const SizedBox(height: 10),
                                   Text(
-                                    "Σας καλωσορίζουμε στο Μικρό Τεχνολογικό Μουσείο του ΔΙΠΑΕ, "
-                                        "έναν μοναδικό εκθεσιακό χώρο μέσα σε ένα παλιό βαγόνι τρένου! "
-                                        "Εδώ, η ιστορία της τεχνολογίας ζωντανεύει, "
-                                        "συνδέοντας το παρελθόν με το παρόν και το μέλλον.",
+                                    AppLocalizations.of(context)!.trainStory,
                                     style: TextStyle(fontSize: 16, color: Colors.white),
                                   ),
-                                  SizedBox(height: 15),
+                                  const SizedBox(height: 15),
                                   Text(
-                                    "🚂 Ένα Βαγόνι, Μια Ιστορία",
+                                    AppLocalizations.of(context)!.discoverTitle,
                                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                                   ),
-                                  SizedBox(height: 10),
+                                  const SizedBox(height: 10),
                                   Text(
-                                    "Το μουσείο στεγάζεται σε ένα αναπαλαιωμένο βαγόνι τρένου, "
-                                        "συμβολίζοντας το ταξίδι της τεχνολογικής εξέλιξης. "
-                                        "Μέσα σε αυτόν τον ιδιαίτερο χώρο, κάθε αντικείμενο αφηγείται τη δική του ιστορία, "
-                                        "προκαλώντας σας σε ένα ταξίδι γνώσης και ανακάλυψης.",
-                                    style: TextStyle(fontSize: 16, color: Colors.white),
-                                  ),
-                                  SizedBox(height: 15),
-                                  Text(
-                                    "🔎 Τι θα ανακαλύψετε;",
-                                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                                  ),
-                                  SizedBox(height: 10),
-                                  Text(
-                                    "📌 Ιστορικές Συσκευές & Υπολογιστές\n"
-                                        "   • Από τις πρώτες αριθμομηχανές έως τους πρώτους προσωπικούς υπολογιστές\n"
-                                        "📡 Τηλεπικοινωνίες\n"
-                                        "   • Ραδιόφωνα, τηλέφωνα και άλλες συσκευές που άλλαξαν τον τρόπο επικοινωνίας\n"
-                                        "🔬 Επιστημονικά Όργανα\n"
-                                        "   • Εργαλεία που χρησιμοποιήθηκαν για έρευνα και καινοτομία",
+                                    AppLocalizations.of(context)!.discoverItems,
                                     style: TextStyle(fontSize: 16, color: Colors.white),
                                   ),
                                 ],
@@ -602,8 +614,8 @@ class _MyHomePageState extends State<MyHomePage> {
                             'assets/ihu_logo.png',
                             height: 80,
                           ),
-                          const Text(
-                            "Διεθνές Πανεπιστήμιο της Ελλάδος",
+                          Text(
+                            AppLocalizations.of(context)!.ihuName,
                             style: TextStyle(fontSize: 16, color: Colors.white),
                           ),
 
@@ -629,7 +641,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                 borderRadius: BorderRadius.circular(10),
                               ),
                             ),
-                            child: const Text('Συμπλήρωσε το ερωτηματολόγιο'),
+                            child: Text(AppLocalizations.of(context)!.questionnaire),
                           ),
                         ],
                       ),

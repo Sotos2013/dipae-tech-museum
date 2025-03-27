@@ -1,6 +1,38 @@
 {
-  "appTitle": "Tech Museum IHU",
-  "welcomeMessage": "Welcome to the IHU Tech Museum",
-  "searchHint": "Search exhibit...",
-  "noResults": "No results found"
+  "@@locale": "en",
+  "museumTitle": "Technological Museum of IHU",
+  "museumDes": "Welcome to the official app of the IHU Technological Museum. Scan QR codes to get information about exhibits, browse the collection, and learn about the history of technology in our unique train wagon museum.",
+
+  "randomExhibit": "Random Exhibit",
+  "noResults": "❌ No results found",
+  "searchPlaceholder": "Search exhibit...",
+
+  "museumInfoTitle": "🏛️ Small Tech Museum",
+  "museumInfo1": "Welcome to the Tech Museum of IHU, a unique exhibition space inside an old train wagon! Here, the history of technology comes alive, connecting the past with the present and future.",
+
+  "trainStoryTitle": "🚂 One Wagon, One Story",
+  "trainStory": "The museum is housed in a renovated train wagon, symbolizing the journey of technological evolution. Within this special space, each object tells its own story, inviting you on a journey of knowledge and discovery.",
+
+  "discoverTitle": "🔎 What will you discover?",
+  "discoverItems": "📌 Historical Devices & Computers\n   • From the first calculators to the first personal computers\n📡 Telecommunications\n   • Radios, telephones and other devices that changed the way we communicate\n🔬 Scientific Instruments\n   • Tools used for research and innovation",
+
+  "ihuName": "International Hellenic University",
+  "questionnaire": "Fill out the questionnaire",
+  "noInternet": "No Internet Connection",
+  "retry": "Retry",
+  "noInternetMessage": "Please connect to the internet and try again.",
+
+  "noGithub": "No Github connection",
+  "aboutAppTitle": "About app",
+
+  "qrScannerTitle": "Scan Exhibit QR Code",
+  "invalidQrMessage": "❌ Invalid QR Code!",
+  "qrSearchError": "❌ Error scanning QR Code!",
+  "flashOn": "Flash On",
+  "flashOff": "Flash Off",
+
+  "exhibitInfoTitle": "Exhibit Information",
+  "imageLoadError": "Image failed to load!",
+  "backButton": "Back",
+  "startQuizButton": "Start Quiz"
 }
