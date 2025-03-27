@@ -123,16 +123,16 @@ class _SplashScreenState extends State<SplashScreen> {
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            Icon(Icons.museum, size: 100, color: Colors.white),
-            SizedBox(height: 20),
+          children: [
+            const Icon(Icons.museum, size: 100, color: Colors.white),
+            const SizedBox(height: 20),
             Text(
-              "Καλώς ήρθατε στο Τεχνολογικό Μουσείο του ΔΙΠΑΕ",
-              style: TextStyle(fontSize: 20, color: Colors.white),
+              AppLocalizations.of(context)!.museumTitle,
+              style: const TextStyle(fontSize: 20, color: Colors.white),
               textAlign: TextAlign.center,
             ),
-            SizedBox(height: 10),
-            CircularProgressIndicator(color: Colors.white),
+            const SizedBox(height: 10),
+            const CircularProgressIndicator(color: Colors.white),
           ],
         ),
       ),
@@ -202,16 +202,16 @@ class _ConnectionCheckScreenState extends State<ConnectionCheckScreen> {
           children: [
             const Icon(Icons.signal_wifi_connected_no_internet_4, size: 80, color: Colors.red),
             const SizedBox(height: 20),
-            const Text(
-              "No Internet Connection",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+            Text(
+              AppLocalizations.of(context)!.noInternet,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
             ),
             const SizedBox(height: 10),
-            const Text("Please connect to the internet and try again.", style: TextStyle(color: Colors.white),),
+            Text(AppLocalizations.of(context)!.noInternetMessage, style: const TextStyle(color: Colors.white),),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _checkInternet,
-              child: const Text("Retry"),
+              child: Text(AppLocalizations.of(context)!.retry),
             ),
           ],
         ),
@@ -316,9 +316,9 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _showNoInternetSnackbar() {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Χάθηκε η σύνδεση στο διαδίκτυο!"),
-        duration: Duration(seconds: 3),
+      SnackBar(
+        content: Text(AppLocalizations.of(context)!.noInternet),
+        duration: const Duration(seconds: 3),
         backgroundColor: Colors.red,
       ),
     );
@@ -628,7 +628,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
                               if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Δεν ήταν δυνατή η φόρτωση του Google Form')),
+                                  SnackBar(content: Text(AppLocalizations.of(context)!.noInternet)),
                                 );
                               }
                             },
