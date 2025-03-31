@@ -250,37 +250,52 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> _fetchRandomExhibit() async {
     setState(() => _isLoading = true);
 
-    final response = await Supabase.instance.client
-        .rpc('get_random_exhibit')
-        .maybeSingle();
+    try {
+      final connectivityResult = await Connectivity().checkConnectivity();
+      final hasInternet = connectivityResult != ConnectivityResult.none;
 
-    if (response == null) {
+      if (!hasInternet) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.noInternet),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return; // 🛑 Βγαίνουμε χωρίς να αλλάξουμε το randomExhibit
+      }
+
+      final response = await Supabase.instance.client
+          .rpc('get_random_exhibit')
+          .maybeSingle();
+
+      if (response == null) return;
+
+      String name = response["name"] ?? "Άγνωστο Έκθεμα";
+      String description = response["description"] ?? "Δεν υπάρχει περιγραφή.";
+      final locale = Localizations.localeOf(context).languageCode;
+
+      if (locale == 'en') {
+        final translations = await Future.wait([
+          TranslationHelper.translate(name, 'el', 'en'),
+          TranslationHelper.translate(description, 'el', 'en'),
+        ]);
+        name = translations[0];
+        description = translations[1];
+      }
+
+      setState(() {
+        randomExhibit = {
+          "id": response["id"],
+          "name": name,
+          "description": description,
+          "imageUrl": response["imageUrl"] ?? "",
+        };
+      });
+    } catch (e) {
+      print("❌ Σφάλμα: $e");
+    } finally {
       setState(() => _isLoading = false);
-      return;
     }
-
-    String name = response["name"] ?? "Άγνωστο Έκθεμα";
-    String description = response["description"] ?? "Δεν υπάρχει διαθέσιμη περιγραφή.";
-
-    final locale = Localizations.localeOf(context).languageCode;
-    if (locale == 'en') {
-      final translated = await Future.wait([
-        TranslationHelper.translate(name, 'el', 'en'),
-        TranslationHelper.translate(description, 'el', 'en'),
-      ]);
-      name = translated[0];
-      description = translated[1];
-    }
-
-    setState(() {
-      randomExhibit = {
-        "id": response["id"],
-        "name": name,
-        "description": description,
-        "imageUrl": response["imageUrl"] ?? "",
-      };
-      _isLoading = false;
-    });
   }
 
   Future<void> _searchExhibits(String query) async {
@@ -442,8 +457,26 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: _fetchRandomExhibit, // 🔄 Ανανεώνει το exhibit με swipe down
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: Colors.white,))
+          : RefreshIndicator(
+        onRefresh: () async {
+          final connectivityResult = await Connectivity().checkConnectivity();
+          final hasInternet = connectivityResult != ConnectivityResult.none;
+
+          if (hasInternet) {
+            await _fetchRandomExhibit();
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(AppLocalizations.of(context)!.noInternet),
+                backgroundColor: Colors.red,
+                duration: const Duration(seconds: 3),
+              ),
+            );
+          }
+        },
+        // 🔄 Ανανεώνει το exhibit με swipe down
         color: Color(0xFFD41C1C),
         child: GestureDetector(
           onTap: () {
