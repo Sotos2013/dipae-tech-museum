@@ -304,48 +304,67 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  Timer? _debounce;
+
   Future<void> _searchExhibits(String query) async {
-    if (query.isEmpty) {
+    if (query.trim().isEmpty) {
       setState(() {
         searchResults.clear();
         isSearching = false;
       });
       return;
     }
+    _debounce = Timer(const Duration(milliseconds: 300), () async {
+      final currentQuery = searchController.text.trim();
 
-    final results = await Supabase.instance.client
-        .from('valid_qr_codes')
-        .select()
-        .ilike('name', '%$query%');
-
-    final locale = Localizations.localeOf(context).languageCode;
-
-    final translated = <Map<String, dynamic>>[];
-
-    for (var exhibit in results) {
-      String name = exhibit["name"] ?? "Άγνωστο Έκθεμα";
-      String description = exhibit["description"] ?? "Δεν υπάρχει περιγραφή.";
-
-      if (locale == 'en') {
-        final t = await Future.wait([
-          TranslationHelper.translate(name, 'el', 'en'),
-          TranslationHelper.translate(description, 'el', 'en'),
-        ]);
-        name = t[0];
-        description = t[1];
+      if (currentQuery.isEmpty) {
+        if (mounted) {
+          setState(() {
+            searchResults.clear();
+            isSearching = false;
+          });
+        }
+        return;
       }
 
-      translated.add({
-        "id": exhibit["id"],
-        "name": name,
-        "description": description,
-        "imageUrl": exhibit["imageUrl"] ?? "",
-      });
-    }
+      final response = await Supabase.instance.client
+          .from('valid_qr_codes')
+          .select()
+          .ilike('name', '%$currentQuery%');
 
-    setState(() {
-      searchResults = translated;
-      isSearching = true;
+      final locale = Localizations.localeOf(context).languageCode;
+      final translated = <Map<String, dynamic>>[];
+
+      for (var exhibit in response) {
+        String name = exhibit["name"] ?? "Άγνωστο Έκθεμα";
+        String description = exhibit["description"] ?? "Δεν υπάρχει περιγραφή.";
+
+        if (locale == 'en') {
+          final t = await Future.wait([
+            TranslationHelper.translate(name, 'el', 'en'),
+            TranslationHelper.translate(description, 'el', 'en'),
+          ]);
+          name = t[0];
+          description = t[1];
+        }
+
+        translated.add({
+          "id": exhibit["id"],
+          "name": name,
+          "description": description,
+          "imageUrl": exhibit["imageUrl"] ?? "",
+        });
+      }
+
+      // 🧠 Εξασφάλιση ότι το query δεν άλλαξε στο μεταξύ
+      if (currentQuery == searchController.text.trim()) {
+        if (mounted) {
+          setState(() {
+            searchResults = translated;
+            isSearching = true;
+          });
+        }
+      }
     });
   }
 
@@ -367,7 +386,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   void dispose() {
-    _subscription.cancel(); // Ακυρώνουμε το StreamSubscription για αποφυγή memory leaks
+    _debounce?.cancel();
+    _subscription.cancel();
     super.dispose();
   }
 
@@ -506,7 +526,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       fillColor: Colors.white,
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                     ),
-                    onChanged: _searchExhibits,
+                      onChanged: _searchExhibits,
                   ),
                   const SizedBox(height: 20),
 

@@ -57,16 +57,12 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
       return;
     }
 
-    print("🔍 Αναζήτηση για QR Code: $code");
-
     try {
       final response = await Supabase.instance.client
           .from('valid_qr_codes')
           .select()
           .eq('id', code)
-          .maybeSingle(); // ✅ Αν δεν βρεθεί επιστρέφει `null` αντί για error
-
-      print("📄 Αποτελέσματα από Supabase: $response");
+          .maybeSingle();
 
       if (response != null) {
         print("✅ Βρέθηκε εγγραφή στο Supabase: ${response['name']}");
@@ -83,8 +79,6 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
           ),
         );
       } else {
-        print("❌ Δεν βρέθηκε καμία εγγραφή στο Supabase!");
-
         if (!_hasShownInvalidQrMessage) {
           _hasShownInvalidQrMessage = true; // Αποτρέπει την πολλαπλή εμφάνιση του μηνύματος
           ScaffoldMessenger.of(context).showSnackBar(
@@ -104,7 +98,6 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
         }
       }
     } catch (e) {
-      print("❌ Σφάλμα κατά την αναζήτηση QR Code: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(AppLocalizations.of(context)!.qrSearchError),
