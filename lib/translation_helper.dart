@@ -1,18 +1,19 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class TranslationHelper {
-  static const String _apiKey = '6e1b8519d26b904c858e';
   static const String _email = 'www.sotihatzi@gmail.com';
 
   static Future<String> translate(String text, String from, String to) async {
     final prefs = await SharedPreferences.getInstance();
     final cacheKey = 'translation_${from}_$to:$text';
+    final _apiKey = dotenv.env['MYMEMORY_API_KEY'];
+    if (_apiKey == null) return text;
 
     final cached = prefs.getString(cacheKey);
     if (cached != null) {
-      print('✅ Χρήση αποθηκευμένης μετάφρασης για "$text"');
       return cached;
     }
 

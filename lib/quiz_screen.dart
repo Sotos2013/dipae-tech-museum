@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:untitled1/translation_helper.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class QuizScreen extends StatefulWidget {
   final String qrCode;
@@ -96,15 +97,15 @@ class _QuizScreenState extends State<QuizScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text("Quiz Ολοκληρώθηκε!"),
-          content: Text("Σκορ: $score / ${questions.length}"),
+          title: Text(AppLocalizations.of(context)!.quizComplete),
+          content: Text("$score / ${questions.length}"),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
                 Navigator.pop(context); // ✅ Επιστροφή στην προηγούμενη οθόνη
               },
-              child: const Text("Εντάξει"),
+              child: const Text("ΟΚ"),
             ),
           ],
         );
@@ -124,10 +125,10 @@ class _QuizScreenState extends State<QuizScreen> {
     if (questions.isEmpty) {
       return Scaffold(
         appBar: AppBar(title: const Text("Quiz")),
-        body: const Center(
+        body: Center(
           child: Text(
-            "❌ Δεν υπάρχουν διαθέσιμες ερωτήσεις!",
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            AppLocalizations.of(context)!.noQuestions,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
         ),
       );
@@ -137,7 +138,7 @@ class _QuizScreenState extends State<QuizScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text("Ερώτηση ${currentQuestionIndex + 1} / ${questions.length}"),
+        title: Text("${AppLocalizations.of(context)!.question}  ${currentQuestionIndex + 1} / ${questions.length}"),
         backgroundColor: Colors.green,
       ),
       body: Padding(

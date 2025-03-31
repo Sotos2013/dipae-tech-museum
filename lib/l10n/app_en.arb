@@ -34,5 +34,9 @@
   "exhibitInfoTitle": "Exhibit Information",
   "imageLoadError": "Image failed to load!",
   "backButton": "Back",
-  "startQuizButton": "Start Quiz"
+  "startQuizButton": "Start Quiz",
+
+  "noQuestions": "❌ No available questions!",
+  "quizComplete": "Quiz completed!",
+  "question": "Question"
 }

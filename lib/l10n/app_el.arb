@@ -34,5 +34,9 @@
   "exhibitInfoTitle": "Πληροφορίες Εκθέματος",
   "imageLoadError": "Η εικόνα δεν φορτώθηκε!",
   "backButton": "Πίσω",
-  "startQuizButton": "Ξεκινήστε το Quiz"
+  "startQuizButton": "Ξεκινήστε το Quiz",
+
+  "noQuestions": "❌ Δεν υπάρχουν διαθέσιμες ερωτήσεις!",
+  "quizComplete": "Το quiz ολοκληρώθηκε!",
+  "question": "Ερώτηση"
 }
