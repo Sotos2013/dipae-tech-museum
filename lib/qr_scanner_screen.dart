@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -20,7 +21,25 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
   bool _isFlashOn = false;
   bool _hasShownInvalidQrMessage = false;
   Timer? _debounceTimer;
+  @override
 
+  void initState() {
+    super.initState();
+
+    if (kIsWeb) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)!.webFlashTip,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      });
+    }
+  }
   @override
   void dispose() {
     cameraController.dispose();
@@ -114,21 +133,22 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
         backgroundColor: const Color(0xFF224366),
         title: Text(
           AppLocalizations.of(context)!.qrScannerTitle,
-          style: TextStyle(color: Colors.white),
+          style: const TextStyle(color: Colors.white),
         ),
         actions: [
-          IconButton(
-            icon: Icon(
-              _isFlashOn ? Icons.flash_on : Icons.flash_off,
-              color: Colors.white,
+          if (!kIsWeb)
+            IconButton(
+              icon: Icon(
+                _isFlashOn ? Icons.flash_on : Icons.flash_off,
+                color: Colors.white,
+              ),
+              onPressed: () {
+                setState(() {
+                  _isFlashOn = !_isFlashOn;
+                  cameraController.toggleTorch();
+                });
+              },
             ),
-            onPressed: () {
-              setState(() {
-                _isFlashOn = !_isFlashOn;
-                cameraController.toggleTorch();
-              });
-            },
-          ),
         ],
       ),
       body: Stack(
