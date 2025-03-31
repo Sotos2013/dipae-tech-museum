@@ -31,37 +31,32 @@ class _QRInfoScreenState extends State<QRInfoScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _currentLocale = Localizations.localeOf(context).languageCode;
-    _handleTranslation();
+    final locale = Localizations.localeOf(context).languageCode;
+
+    if (_currentLocale != locale) {
+      _currentLocale = locale;
+      _handleTranslation();
+    }
   }
 
   Future<void> _handleTranslation() async {
     final locale = Localizations.localeOf(context).languageCode;
+    setState(() => isTranslating = true);
 
     if (locale == 'en') {
-      setState(() => isTranslating = true);
-
       translatedName = await TranslationHelper.translate(widget.name, 'el', 'en');
       translatedDescription = await TranslationHelper.translate(widget.description, 'el', 'en');
-
-      setState(() => isTranslating = false);
     } else {
       translatedName = widget.name;
       translatedDescription = widget.description;
-      setState(() => isTranslating = false);
     }
+
+    if (mounted) setState(() => isTranslating = false);
   }
 
   @override
   Widget build(BuildContext context) {
     final locale = Localizations.localeOf(context).languageCode;
-
-    // Αν αλλάξει η γλώσσα, κάνε νέα μετάφραση
-    if (_currentLocale != locale) {
-      _currentLocale = locale;
-      _handleTranslation();
-    }
-
     String encodedUrl = Uri.encodeFull(widget.imageUrl);
 
     return Scaffold(
@@ -73,7 +68,7 @@ class _QRInfoScreenState extends State<QRInfoScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.language, color: Colors.white),
-            onPressed: () async {
+            onPressed: () {
               final newLocale = locale == 'el' ? const Locale('en') : const Locale('el');
               MyApp.setLocale(context, newLocale);
             },
@@ -83,7 +78,7 @@ class _QRInfoScreenState extends State<QRInfoScreen> {
       ),
       backgroundColor: const Color(0xFF224366),
       body: isTranslating
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator(color: Colors.white))
           : Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20.0),

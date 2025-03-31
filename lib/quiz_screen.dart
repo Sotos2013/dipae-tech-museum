@@ -118,7 +118,7 @@ class _QuizScreenState extends State<QuizScreen> {
     if (isLoading) {
       return Scaffold(
         appBar: AppBar(title: const Text("Quiz")),
-        body: const Center(child: CircularProgressIndicator()),
+        body: const Center(child: CircularProgressIndicator(color: Colors.white,)),
       );
     }
 

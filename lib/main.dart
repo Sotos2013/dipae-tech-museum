@@ -476,7 +476,7 @@ class _MyHomePageState extends State<MyHomePage> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(AppLocalizations.of(context)!.noInternet),
-                backgroundColor: Colors.red,
+                backgroundColor: Color(0xFFD41C1C),
                 duration: const Duration(seconds: 3),
               ),
             );
@@ -546,7 +546,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                   height: 50,
                                   fit: BoxFit.cover,
                                   errorBuilder: (context, error, stackTrace) {
-                                    return const Icon(Icons.broken_image, size: 50, color: Colors.red);
+                                    return const Icon(Icons.broken_image, size: 50, color: Color(0xFFD41C1C));
                                   },
                                 ),
                               ),
@@ -710,7 +710,7 @@ class _MyHomePageState extends State<MyHomePage> {
                               }
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red,
+                              backgroundColor: Color(0xFFD41C1C),
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
                               textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
