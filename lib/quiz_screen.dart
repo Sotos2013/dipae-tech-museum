@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:untitled1/translation_helper.dart';
 
 class QuizScreen extends StatefulWidget {
   final String qrCode;
@@ -20,41 +21,58 @@ class _QuizScreenState extends State<QuizScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchQuestions();
+  }
+  String? _currentLocale;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    final locale = Localizations.localeOf(context).languageCode;
+
+    if (_currentLocale != locale) {
+      _currentLocale = locale;
+      _fetchQuestions(locale);
+    }
   }
 
-  Future<void> _fetchQuestions() async {
+  Future<void> _fetchQuestions(String locale) async {
     try {
-      print("🔍 Αναζήτηση ερωτήσεων για το QR Code: ${widget.qrCode}");
-      // ✅ Φέρνουμε όλες τις ερωτήσεις με το ίδιο ID
       final List<dynamic> response = await Supabase.instance.client
           .from('quizzes')
           .select()
           .eq('id', widget.qrCode);
+
       if (response.isNotEmpty) {
-        setState(() {
-          questions = response.map((question) {
-            return {
-              'question': question['question'],
-              'answers': jsonDecode(question['answers']), // ✅ Μετατροπή JSON
-            };
-          }).toList();
+        final translated = await Future.wait(response.map((question) async {
+          final originalQ = question['question'];
+          final answers = List<Map<String, dynamic>>.from(jsonDecode(question['answers']));
 
+          String translatedQ = originalQ;
+
+          if (locale == 'en') {
+            translatedQ = await TranslationHelper.translate(originalQ, 'el', 'en');
+            for (var answer in answers) {
+              answer['text'] = await TranslationHelper.translate(answer['text'], 'el', 'en');
+            }
+          }
+
+          return {
+            'question': translatedQ,
+            'answers': answers,
+          };
+        }));
+
+        setState(() {
+          questions = List<Map<String, dynamic>>.from(translated);
           isLoading = false;
         });
-
-        print("✅ Φορτώθηκαν ${questions.length} ερωτήσεις για το ${widget.qrCode}!");
       } else {
-        print("❌ Δεν βρέθηκαν ερωτήσεις!");
-        setState(() {
-          isLoading = false;
-        });
+        setState(() => isLoading = false);
       }
     } catch (e) {
       print("❌ Σφάλμα φόρτωσης ερωτήσεων: $e");
-      setState(() {
-        isLoading = false;
-      });
+      setState(() => isLoading = false);
     }
   }
 

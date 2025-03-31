@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 import 'package:untitled1/quiz_screen.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-
+import 'translation_helper.dart';
 import 'main.dart';
 
 class QRInfoScreen extends StatefulWidget {
@@ -43,35 +41,14 @@ class _QRInfoScreenState extends State<QRInfoScreen> {
     if (locale == 'en') {
       setState(() => isTranslating = true);
 
-      translatedName = await translateWithMyMemory(widget.name);
-      translatedDescription = await translateWithMyMemory(widget.description);
+      translatedName = await TranslationHelper.translate(widget.name, 'el', 'en');
+      translatedDescription = await TranslationHelper.translate(widget.description, 'el', 'en');
 
       setState(() => isTranslating = false);
     } else {
       translatedName = widget.name;
       translatedDescription = widget.description;
       setState(() => isTranslating = false);
-    }
-  }
-
-  Future<String> translateWithMyMemory(String text) async {
-    try {
-      final url = Uri.parse(
-        'https://api.mymemory.translated.net/get?q=${Uri.encodeComponent(text)}&langpair=el|en',
-      );
-
-      final response = await http.get(url);
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return data['responseData']['translatedText'];
-      } else {
-        print('❌ MyMemory error: ${response.statusCode} - ${response.body}');
-        return text;
-      }
-    } catch (e) {
-      print('❌ Exception during translation: $e');
-      return text;
     }
   }
 

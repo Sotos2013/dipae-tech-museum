@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:untitled1/translation_helper.dart';
 import 'qr_info_screen.dart';
 import 'qr_scanner_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -234,31 +235,51 @@ class _MyHomePageState extends State<MyHomePage> {
   bool isSearching = false;
   TextEditingController searchController = TextEditingController();
   bool _isOffline = false;
-
+  bool _isLoading = true;
   @override
   void initState() {
     super.initState();
-    _fetchRandomExhibit();
+    _fetchRandomExhibit().then((_) {
+      setState(() {
+        _isLoading = false;
+      });
+    });
     _startMonitoring();
   }
 
   Future<void> _fetchRandomExhibit() async {
+    setState(() => _isLoading = true);
+
     final response = await Supabase.instance.client
         .rpc('get_random_exhibit')
         .maybeSingle();
 
     if (response == null) {
-      print("⚠️ Δεν βρέθηκε τυχαίο έκθεμα!");
+      setState(() => _isLoading = false);
       return;
+    }
+
+    String name = response["name"] ?? "Άγνωστο Έκθεμα";
+    String description = response["description"] ?? "Δεν υπάρχει διαθέσιμη περιγραφή.";
+
+    final locale = Localizations.localeOf(context).languageCode;
+    if (locale == 'en') {
+      final translated = await Future.wait([
+        TranslationHelper.translate(name, 'el', 'en'),
+        TranslationHelper.translate(description, 'el', 'en'),
+      ]);
+      name = translated[0];
+      description = translated[1];
     }
 
     setState(() {
       randomExhibit = {
-        "id": response["id"] ?? "unknown_id",
-        "name": response["name"] ?? "Άγνωστο Έκθεμα",
-        "description": response["description"] ?? "Δεν υπάρχει διαθέσιμη περιγραφή.",
-        "imageUrl": response["imageUrl"] ?? "https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg"
+        "id": response["id"],
+        "name": name,
+        "description": description,
+        "imageUrl": response["imageUrl"] ?? "",
       };
+      _isLoading = false;
     });
   }
 
@@ -271,23 +292,38 @@ class _MyHomePageState extends State<MyHomePage> {
       return;
     }
 
-    final response = await Supabase.instance.client
+    final results = await Supabase.instance.client
         .from('valid_qr_codes')
         .select()
         .ilike('name', '%$query%');
 
-    setState(() {
-      print("🔍 Random Exhibit: $randomExhibit");
-      print("🔍 Search Results: $searchResults");
+    final locale = Localizations.localeOf(context).languageCode;
 
-      searchResults = List<Map<String, dynamic>>.from(response)
-          .map((exhibit) => {
-        "id": exhibit["id"] ?? "unknown_id",
-        "name": exhibit["name"] ?? "Άγνωστο Έκθεμα",
-        "description": exhibit["description"] ?? "Δεν υπάρχει διαθέσιμη περιγραφή.",
-        "imageUrl": exhibit["imageUrl"] ?? "https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg"
-      })
-          .toList();
+    final translated = <Map<String, dynamic>>[];
+
+    for (var exhibit in results) {
+      String name = exhibit["name"] ?? "Άγνωστο Έκθεμα";
+      String description = exhibit["description"] ?? "Δεν υπάρχει περιγραφή.";
+
+      if (locale == 'en') {
+        final t = await Future.wait([
+          TranslationHelper.translate(name, 'el', 'en'),
+          TranslationHelper.translate(description, 'el', 'en'),
+        ]);
+        name = t[0];
+        description = t[1];
+      }
+
+      translated.add({
+        "id": exhibit["id"],
+        "name": name,
+        "description": description,
+        "imageUrl": exhibit["imageUrl"] ?? "",
+      });
+    }
+
+    setState(() {
+      searchResults = translated;
       isSearching = true;
     });
   }
@@ -414,8 +450,10 @@ class _MyHomePageState extends State<MyHomePage> {
             // Κλείνει το πληκτρολόγιο όταν ο χρήστης πατάει εκτός του πεδίου αναζήτησης
             FocusScope.of(context).unfocus();
           },
-          child: Stack(
-            children: [
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator(color: Colors.white))
+              : Stack(
+              children: [
               ListView(
                 padding: const EdgeInsets.all(20.0),
                 children: [
