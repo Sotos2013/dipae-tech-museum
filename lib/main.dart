@@ -2,6 +2,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'dart:io';
+import 'dart:js' as js;
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -48,6 +49,29 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     _loadSavedLocale();
+    if (kIsWeb) {
+      Future.delayed(const Duration(seconds: 1), _showInstallPrompt);
+    }
+  }
+  void _showInstallPrompt() {
+    js.context.callMethod('eval', ["""
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+
+      let installBanner = document.createElement('div');
+      installBanner.innerHTML = '<div style="position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#005580; color:white; padding:15px 20px; border-radius:10px; font-family:sans-serif; z-index:9999; box-shadow:0 4px 6px rgba(0,0,0,0.2);">🔧 Εγκατάσταση της εφαρμογής;<br><button id="install-btn" style="margin-top:10px; padding:5px 10px; background:white; color:#005580; border:none; border-radius:5px;">Εγκατάσταση</button></div>';
+      document.body.appendChild(installBanner);
+
+      document.getElementById('install-btn').addEventListener('click', () => {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(() => {
+          document.body.removeChild(installBanner);
+        });
+      });
+    });
+  """]);
   }
 
   Future<void> _loadSavedLocale() async {
