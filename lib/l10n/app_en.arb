@@ -1,7 +1,13 @@
 {
   "@@locale": "en",
   "museumTitle": "IHU Tech Museum",
-  "museumDes": "Welcome to the official app of the IHU Technological Museum. Scan QR codes to get information about exhibits, browse the collection, and learn about the history of technology in our unique train wagon museum.",
+  "museumDes": "Welcome to app of the IHU Tech Museum. Scan QR codes to get information about exhibits, browse the collection, and learn about the history of technology in our unique train wagon museum.",
+
+  "helpTitle": "User Guide",
+  "searchHelp": "Use the search bar to find exhibits.",
+  "tapExhibitHelp": "Tap an exhibit to see more information.",
+  "scanQrHelp": "Use the QR scanner to scan physical QR codes.",
+  "changeLanguageHelp": "Change language from the 🌐 icon at the top right.",
 
   "randomExhibit": "Random Exhibit",
   "noResults": "❌ No results found",
@@ -17,7 +23,7 @@
   "discoverItems": "📌 Historical Devices & Computers\n   • From the first calculators to the first personal computers\n📡 Telecommunications\n   • Radios, telephones and other devices that changed the way we communicate\n🔬 Scientific Instruments\n   • Tools used for research and innovation",
 
   "ihuName": "International Hellenic University",
-  "questionnaire": "Fill out the questionnaire",
+  "questionnaire": "Τell your opinion",
   "noInternet": "No Internet Connection",
   "retry": "Retry",
   "noInternetMessage": "Please connect to the internet and try again.",

@@ -251,6 +251,18 @@ class _MyHomePageState extends State<MyHomePage> {
       });
     });
     _startMonitoring();
+    _checkAndShowHelpDialog();
+  }
+
+  Future<void> _checkAndShowHelpDialog() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hasSeenHelp = prefs.getBool('hasSeenHelp') ?? false;
+    if (!hasSeenHelp) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showHelpDialog(context);
+      });
+      await prefs.setBool('hasSeenHelp', true);
+    }
   }
 
   Future<void> _fetchRandomExhibit() async {
@@ -462,6 +474,54 @@ class _MyHomePageState extends State<MyHomePage> {
       },
     );
   }
+  void _showHelpDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF224366),
+          title: Text(
+            AppLocalizations.of(context)!.helpTitle,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHelpRow(Icons.search, AppLocalizations.of(context)!.searchHelp),
+              _buildHelpRow(Icons.info_outline, AppLocalizations.of(context)!.tapExhibitHelp),
+              _buildHelpRow(Icons.qr_code_scanner, AppLocalizations.of(context)!.scanQrHelp),
+              _buildHelpRow(Icons.language, AppLocalizations.of(context)!.changeLanguageHelp),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("OK", style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildHelpRow(IconData icon, String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: Row(
+        children: [
+          Icon(icon, color: Colors.white),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -469,6 +529,10 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         title: Text(AppLocalizations.of(context)!.museumTitle),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.help_outline, color: Colors.white),
+            onPressed: () => _showHelpDialog(context),
+          ),
           IconButton(
             icon: const Icon(Icons.info_outline, color: Colors.white),
             onPressed: () => _showAboutDialog(context),
@@ -484,266 +548,23 @@ class _MyHomePageState extends State<MyHomePage> {
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Colors.white,))
+          ? const Center(child: CircularProgressIndicator(color: Colors.white))
           : RefreshIndicator(
-        onRefresh: () async {
-          final connectivityResult = await Connectivity().checkConnectivity();
-          final hasInternet = connectivityResult != ConnectivityResult.none;
-
-          if (hasInternet) {
-            await _fetchRandomExhibit();
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(AppLocalizations.of(context)!.noInternet),
-                backgroundColor: Color(0xFFD41C1C),
-                duration: const Duration(seconds: 3),
-              ),
-            );
-          }
-        },
-        // 🔄 Ανανεώνει το exhibit με swipe down
-        color: Color(0xFFD41C1C),
+        onRefresh: _onRefresh,
+        color: const Color(0xFFD41C1C),
         child: GestureDetector(
-          onTap: () {
-            // Κλείνει το πληκτρολόγιο όταν ο χρήστης πατάει εκτός του πεδίου αναζήτησης
-            FocusScope.of(context).unfocus();
-          },
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator(color: Colors.white))
-              : Stack(
-              children: [
+          onTap: () => FocusScope.of(context).unfocus(),
+          child: Stack(
+            children: [
               ListView(
                 padding: const EdgeInsets.all(20.0),
                 children: [
-                  // 🔍 Πεδίο Αναζήτησης
-                  TextField(
-                    controller: searchController,
-                    decoration: InputDecoration(
-                      labelText: AppLocalizations.of(context)!.searchPlaceholder,
-                      prefixIcon: const Icon(Icons.search),
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                      onChanged: _searchExhibits,
-                  ),
+                  _buildSearchBar(context),
                   const SizedBox(height: 20),
-
-                  // ✅ Αν γίνεται αναζήτηση, δείξε τα αποτελέσματα
                   if (isSearching)
-                    if (searchResults.isEmpty)
-                      Center(
-                        child: Text(
-                            AppLocalizations.of(context)!.noResults,
-                          style: const TextStyle(color: Colors.white, fontSize: 16),
-                        ),
-                      )
-                    else
-                      ...searchResults.map((exhibit) {
-                        return ListTile(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => QRInfoScreen(
-                                  id: exhibit['id'],
-                                  name: exhibit['name'],
-                                  description: exhibit['description'],
-                                  imageUrl: exhibit['imageUrl'],
-                                ),
-                              ),
-                            );
-                          },
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), // Προσθήκη padding για καλύτερη εμφάνιση
-                          title: Row(
-                            children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Image.network(
-                                  exhibit['imageUrl'],
-                                  width: 50,
-                                  height: 50,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return const Icon(Icons.broken_image, size: 50, color: Color(0xFFD41C1C));
-                                  },
-                                ),
-                              ),
-                              const SizedBox(width: 10), // Απόσταση εικόνας από το κείμενο
-                              Expanded(
-                                child: Text(
-                                  exhibit['name'],
-                                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  softWrap: true,
-                                ),
-                              ),
-                            ],
-                          ),
-                          subtitle: Text(
-                            exhibit['description'],
-                            style: const TextStyle(fontSize: 14, color: Colors.white70),
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
-                            softWrap: true,
-                          ),
-                        );
-                      })
-                  else if (randomExhibit != null) ...[
-                    // 🎲 Τυχαίο Έκθεμα της Ημέρας
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => QRInfoScreen(
-                              id: randomExhibit!['id'] ?? 'Άγνωστο Έκθεμα',
-                              name: randomExhibit!['name'] ?? 'Άγνωστο Έκθεμα',
-                              description: randomExhibit!['description'] ?? 'Δεν υπάρχει διαθέσιμη περιγραφή.',
-                              imageUrl: randomExhibit!['imageUrl'] ?? 'https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg',
-                            ),
-                          ),
-                        ).then((_) {
-                          _fetchRandomExhibit(); // 🔄 Επαναφέρει το τυχαίο έκθεμα όταν ο χρήστης επιστρέψει
-                        });
-                      },
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          // 🎲 Τυχαίο Έκθεμα της Ημέρας
-                          if (randomExhibit != null)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 20), // Αποφυγή επικαλύψεων
-                              child: GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => QRInfoScreen(
-                                        id: randomExhibit!['id'] ?? 'unknown_id',
-                                        name: randomExhibit!['name'] ?? 'Άγνωστο Έκθεμα',
-                                        description: randomExhibit!['description'] ?? 'Δεν υπάρχει διαθέσιμη περιγραφή.',
-                                        imageUrl: randomExhibit!['imageUrl'] ?? 'https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg',
-                                      ),
-                                    ),
-                                  ).then((_) {
-                                    _fetchRandomExhibit(); // 🔄 Επαναφέρει το τυχαίο έκθεμα όταν ο χρήστης επιστρέψει
-                                  });
-                                },
-                                child: Card(
-                                  elevation: 5,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                                  child: Column(
-                                    children: [
-                                      ClipRRect(
-                                        borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
-                                        child: Image.network(
-                                          randomExhibit!['imageUrl'],
-                                          height: 150,
-                                          width: double.infinity,
-                                          fit: BoxFit.cover,
-                                        ),
-                                      ),
-                                      Padding(
-                                        padding: const EdgeInsets.all(10.0),
-                                        child: Text(
-                                          "${AppLocalizations.of(context)!.randomExhibit} :"" ${randomExhibit?['name'] ?? 'Άγνωστο Έκθεμα'}",
-                                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-
-                          // ℹ️ Πληροφορίες Μουσείου (ΔΕΝ ΕΙΝΑΙ TAPABLE!)
-                          IgnorePointer(
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF005580), // 🔵 Μπλε background
-                                borderRadius: BorderRadius.circular(15),
-                              ),
-                              padding: const EdgeInsets.all(15),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    AppLocalizations.of(context)!.museumInfoTitle,
-                                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Text(
-                                    AppLocalizations.of(context)!.museumInfo1,
-                                    style: const TextStyle(fontSize: 16, color: Colors.white),
-                                  ),
-                                  const SizedBox(height: 15),
-                                  Text(
-                                    AppLocalizations.of(context)!.trainStoryTitle,
-                                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Text(
-                                    AppLocalizations.of(context)!.trainStory,
-                                    style: TextStyle(fontSize: 16, color: Colors.white),
-                                  ),
-                                  const SizedBox(height: 15),
-                                  Text(
-                                    AppLocalizations.of(context)!.discoverTitle,
-                                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Text(
-                                    AppLocalizations.of(context)!.discoverItems,
-                                    style: TextStyle(fontSize: 16, color: Colors.white),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-
-                          const SizedBox(height: 20),
-
-                          // 🏛️ **Λογότυπο ΔΙΠΑΕ**
-                          Image.asset(
-                            'assets/ihu_logo.png',
-                            height: 80,
-                          ),
-                          Text(
-                            AppLocalizations.of(context)!.ihuName,
-                            style: TextStyle(fontSize: 16, color: Colors.white),
-                          ),
-
-                          const SizedBox(height: 20),
-
-                          // 🔴 Google Form Button
-                          ElevatedButton(
-                            onPressed: () async {
-                              final Uri url = Uri.parse("https://docs.google.com/forms/d/e/1FAIpQLSeve-CdFpu5gper6D2QnmHu6cs99fqvGeK7A2UCNmk6JRZWjQ/viewform");
-
-                              if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text(AppLocalizations.of(context)!.noInternet)),
-                                );
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Color(0xFFD41C1C),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                              textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                            child: Text(AppLocalizations.of(context)!.questionnaire),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                    _buildSearchResults(context)
+                  else if (randomExhibit != null)
+                    _buildMainInfo(context),
                 ],
               ),
             ],
@@ -752,9 +573,231 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => const QRScannerScreen()));
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const QRScannerScreen()),
+          );
         },
         child: const Icon(Icons.qr_code_scanner, color: Colors.white),
+      ),
+    );
+  }
+  Widget _buildMainInfo(BuildContext context) {
+    return Column(
+      children: [
+        if (randomExhibit != null) _buildRandomExhibitCard(context),
+        const SizedBox(height: 20),
+        _buildMuseumInfoSection(context),
+        const SizedBox(height: 20),
+        _buildUniversityLogo(context),
+        const SizedBox(height: 20),
+        _buildFeedbackButton(context),
+      ],
+    );
+  }
+  Widget _buildSearchBar(BuildContext context) {
+    return TextField(
+      controller: searchController,
+      decoration: InputDecoration(
+        labelText: AppLocalizations.of(context)!.searchPlaceholder,
+        prefixIcon: const Icon(Icons.search),
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+      onChanged: _searchExhibits,
+    );
+  }
+  Widget _buildSearchResults(BuildContext context) {
+    if (searchResults.isEmpty) {
+      return Center(
+        child: Text(
+          AppLocalizations.of(context)!.noResults,
+          style: const TextStyle(color: Colors.white, fontSize: 16),
+        ),
+      );
+    }
+    return Column(
+      children: searchResults.map((exhibit) => _buildExhibitTile(context, exhibit)).toList(),
+    );
+  }
+  Widget _buildExhibitTile(BuildContext context, Map<String, dynamic> exhibit) {
+    return ListTile(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => QRInfoScreen(
+              id: exhibit['id'],
+              name: exhibit['name'],
+              description: exhibit['description'],
+              imageUrl: exhibit['imageUrl'],
+            ),
+          ),
+        );
+      },
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      title: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.network(
+              exhibit['imageUrl'],
+              width: 50,
+              height: 50,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, size: 50, color: Color(0xFFD41C1C)),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              exhibit['name'],
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+      subtitle: Text(
+        exhibit['description'],
+        style: const TextStyle(fontSize: 14, color: Colors.white70),
+        maxLines: 3,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+  Future<void> _onRefresh() async {
+    final connectivityResult = await Connectivity().checkConnectivity();
+    final hasInternet = connectivityResult != ConnectivityResult.none;
+
+    if (hasInternet) {
+      await _fetchRandomExhibit();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.noInternet),
+          backgroundColor: const Color(0xFFD41C1C),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+  Widget _buildFeedbackButton(BuildContext context) {
+    return ElevatedButton(
+      onPressed: () async {
+        final url = Uri.parse("https://docs.google.com/forms/d/e/1FAIpQLSeve-CdFpu5gper6D2QnmHu6cs99fqvGeK7A2UCNmk6JRZWjQ/viewform");
+        if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(AppLocalizations.of(context)!.noInternet)),
+          );
+        }
+      },
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFFD41C1C),
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+      child: Text(AppLocalizations.of(context)!.questionnaire),
+    );
+  }
+  Widget _buildUniversityLogo(BuildContext context) {
+    return Column(
+      children: [
+        Image.asset('assets/ihu_logo.png', height: 80),
+        Text(
+          AppLocalizations.of(context)!.ihuName,
+          style: const TextStyle(fontSize: 16, color: Colors.white),
+        ),
+      ],
+    );
+  }
+  Widget _buildMuseumInfoSection(BuildContext context) {
+    return IgnorePointer(
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF005580),
+          borderRadius: BorderRadius.circular(15),
+        ),
+        padding: const EdgeInsets.all(15),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              AppLocalizations.of(context)!.museumInfoTitle,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              AppLocalizations.of(context)!.museumInfo1,
+              style: const TextStyle(fontSize: 16, color: Colors.white),
+            ),
+            const SizedBox(height: 15),
+            Text(
+              AppLocalizations.of(context)!.trainStoryTitle,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              AppLocalizations.of(context)!.trainStory,
+              style: const TextStyle(fontSize: 16, color: Colors.white),
+            ),
+            const SizedBox(height: 15),
+            Text(
+              AppLocalizations.of(context)!.discoverTitle,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              AppLocalizations.of(context)!.discoverItems,
+              style: const TextStyle(fontSize: 16, color: Colors.white),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  Widget _buildRandomExhibitCard(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => QRInfoScreen(
+              id: randomExhibit!['id'],
+              name: randomExhibit!['name'],
+              description: randomExhibit!['description'],
+              imageUrl: randomExhibit!['imageUrl'],
+            ),
+          ),
+        ).then((_) => _fetchRandomExhibit());
+      },
+      child: Card(
+        elevation: 5,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        child: Column(
+          children: [
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+              child: Image.network(
+                randomExhibit!['imageUrl'],
+                height: 150,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(10.0),
+              child: Text(
+                "${AppLocalizations.of(context)!.randomExhibit} : ${randomExhibit!['name']}",
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
