@@ -47,8 +47,7 @@ class _QuizScreenState extends State<QuizScreen> {
       if (response.isNotEmpty) {
         final translated = await Future.wait(response.map((question) async {
           final originalQ = question['question'];
-          final answers = List<Map<String, dynamic>>.from(jsonDecode(question['answers']));
-
+          final answers = List<Map<String, dynamic>>.from(question['answers']);
           String translatedQ = originalQ;
 
           if (locale == 'en') {
@@ -143,22 +142,48 @@ class _QuizScreenState extends State<QuizScreen> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              question['question'],
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        child: Center(
+          child: Card(
+            elevation: 6,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    question['question'],
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF224366),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  ...(question['answers'] as List<dynamic>).map((answer) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6.0),
+                      child: ElevatedButton(
+                        onPressed: () => _checkAnswer(answer['correct']),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFD41C1C),
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size(double.infinity, 40),
+                          textStyle: const TextStyle(fontSize: 15),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                        child: Text(answer['text']),
+                      ),
+                    );
+                  }).toList(),
+                ],
+              ),
             ),
-            const SizedBox(height: 20),
-            ...(question['answers'] as List<dynamic>).map((answer) {
-              return ElevatedButton(
-                onPressed: () => _checkAnswer(answer['correct']),
-                child: Text(answer['text']),
-              );
-            }).toList(),
-          ],
+          ),
         ),
       ),
     );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:untitled1/quiz_screen.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'translation_helper.dart';
@@ -43,14 +44,27 @@ class _QRInfoScreenState extends State<QRInfoScreen> {
     final locale = Localizations.localeOf(context).languageCode;
     setState(() => isTranslating = true);
 
-    if (locale == 'en') {
-      translatedName = await TranslationHelper.translate(widget.name, 'el', 'en');
-      translatedDescription = await TranslationHelper.translate(widget.description, 'el', 'en');
-    } else {
-      translatedName = widget.name;
-      translatedDescription = widget.description;
+    final prefs = await SharedPreferences.getInstance();
+    final nameKey = 'trans_${widget.name}_$locale';
+    final descKey = 'trans_${widget.description}_$locale';
+    String? name = prefs.getString(nameKey);
+    String? description = prefs.getString(descKey);
+    if (name == null || description == null) {
+      // Δεν υπήρχε cache — κάνουμε μετάφραση
+      if (locale == 'en') {
+        name = await TranslationHelper.translate(widget.name, 'el', 'en');
+        description = await TranslationHelper.translate(widget.description, 'el', 'en');
+      } else {
+        name = await TranslationHelper.translate(widget.name, 'en', 'el');
+        description = await TranslationHelper.translate(widget.description, 'en', 'el');
+      }
+      // Αποθηκευση στο cache
+      await prefs.setString(nameKey, name);
+      await prefs.setString(descKey, description);
     }
 
+    translatedName = name;
+    translatedDescription = description;
     if (mounted) setState(() => isTranslating = false);
   }
 
@@ -68,9 +82,13 @@ class _QRInfoScreenState extends State<QRInfoScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.language, color: Colors.white),
-            onPressed: () {
+            onPressed: () async {
               final newLocale = locale == 'el' ? const Locale('en') : const Locale('el');
               MyApp.setLocale(context, newLocale);
+              await Future.delayed(const Duration(milliseconds: 100));
+              if (mounted) {
+                _handleTranslation();
+              }
             },
           ),
         ],
