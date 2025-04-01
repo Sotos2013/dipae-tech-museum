@@ -11,20 +11,22 @@ class QRScannerScreen extends StatefulWidget {
   const QRScannerScreen({Key? key}) : super(key: key);
 
   @override
-  _QRScannerScreenState createState() => _QRScannerScreenState();
+  State<QRScannerScreen> createState() => _QRScannerScreenState();
 }
 
 class _QRScannerScreenState extends State<QRScannerScreen> {
-  MobileScannerController cameraController = MobileScannerController(
+  final MobileScannerController cameraController = MobileScannerController(
     facing: CameraFacing.back,
   );
+
   bool _isScanning = true;
   bool _hasShownNoInternetMessage = false;
   bool _isFlashOn = false;
   bool _hasShownInvalidQrMessage = false;
   Timer? _debounceTimer;
-  @override
 
+
+  @override
   void initState() {
     super.initState();
 
@@ -42,6 +44,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
       });
     }
   }
+
   @override
   void dispose() {
     cameraController.dispose();
@@ -49,7 +52,6 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
     super.dispose();
   }
 
-  // 🔥 Έλεγχος σύνδεσης στο Internet
   Future<bool> _checkInternetConnection() async {
     var connectivityResult = await Connectivity().checkConnectivity();
     return connectivityResult != ConnectivityResult.none;
@@ -65,10 +67,10 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
           SnackBar(
             content: Text(
               AppLocalizations.of(context)!.noInternetMessage,
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
             ),
             backgroundColor: Colors.red,
-            duration: Duration(seconds: 3),
+            duration: const Duration(seconds: 3),
           ),
         );
         Future.delayed(const Duration(seconds: 3), () {
@@ -86,35 +88,32 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
           .maybeSingle();
 
       if (response != null) {
-        print("✅ Βρέθηκε εγγραφή στο Supabase: ${response['name']}");
-        print("🔍 Εικόνα από Supabase: ${response['imageUrl']}");
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (context) => QRInfoScreen(
-              id: response['id'], // id εκθέματος
-              name: response['name'], // Όνομα εκθέματος
-              description: response['description'], // Περιγραφή
-              imageUrl: response['imageUrl'], // URL εικόνας
+              id: response['id'],
+              name: response['name'],
+              description: response['description'],
+              imageUrl: response['imageUrl'],
             ),
           ),
         );
       } else {
         if (!_hasShownInvalidQrMessage) {
-          _hasShownInvalidQrMessage = true; // Αποτρέπει την πολλαπλή εμφάνιση του μηνύματος
+          _hasShownInvalidQrMessage = true;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
                 AppLocalizations.of(context)!.invalidQrMessage,
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
               ),
               backgroundColor: Colors.red,
-              duration: Duration(seconds: 3),
+              duration: const Duration(seconds: 3),
             ),
           );
-
           Future.delayed(const Duration(seconds: 3), () {
-            _hasShownInvalidQrMessage = false; // Επαναφέρει τη μεταβλητή μετά από 3 δευτερόλεπτα
+            _hasShownInvalidQrMessage = false;
           });
         }
       }
@@ -165,14 +164,10 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
               _debounceTimer = Timer(const Duration(milliseconds: 800), () {
                 final String? code = capture.barcodes.first.rawValue;
                 if (code != null) {
-                  setState(() {
-                    _isScanning = false;
-                  });
+                  setState(() => _isScanning = false);
 
                   _checkQRCode(code).then((_) {
-                    setState(() {
-                      _isScanning = true;
-                    });
+                    setState(() => _isScanning = true);
                   });
                 }
               });
@@ -185,10 +180,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
               width: 250,
               height: 250,
               decoration: BoxDecoration(
-                border: Border.all(
-                  color: Colors.white,
-                  width: 4,
-                ),
+                border: Border.all(color: Colors.white, width: 4),
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
