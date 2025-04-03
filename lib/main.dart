@@ -8,6 +8,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:untitled1/translation_helper.dart';
+import 'final_quiz_screen.dart';
 import 'qr_info_screen.dart';
 import 'qr_scanner_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -591,6 +592,8 @@ class _MyHomePageState extends State<MyHomePage> {
         const SizedBox(height: 20),
         _buildUniversityLogo(context),
         const SizedBox(height: 20),
+        _buildFinalQuizButton(context),
+        const SizedBox(height: 20),
         _buildFeedbackButton(context),
       ],
     );
@@ -702,6 +705,21 @@ class _MyHomePageState extends State<MyHomePage> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
       child: Text(AppLocalizations.of(context)!.questionnaire),
+    );
+  }
+  Widget _buildFinalQuizButton(BuildContext context) {
+    return ElevatedButton.icon(
+      onPressed: () {
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const FinalQuizScreen()));
+      },
+      icon: const Icon(Icons.school),
+      label: Text(AppLocalizations.of(context)!.finalQuiz),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.green,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+      ),
     );
   }
   Widget _buildUniversityLogo(BuildContext context) {

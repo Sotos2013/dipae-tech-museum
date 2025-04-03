@@ -45,5 +45,7 @@
   "noQuestions": "❌ Δεν υπάρχουν διαθέσιμες ερωτήσεις!",
   "quizComplete": "Το quiz ολοκληρώθηκε!",
   "question": "Ερώτηση",
-  "webFlashTip": "Flashlight is not supported. For best results, scan in a bright environment."
+  "webFlashTip": "Flashlight is not supported. For best results, scan in a bright environment.",
+
+  "finalQuiz": "Τελικό κουίζ"
 }
