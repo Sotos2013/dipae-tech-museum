@@ -40,9 +40,7 @@ class _QuizScreenState extends State<QuizScreen> {
   Future<void> _fetchQuestions(String locale) async {
     try {
       final List<dynamic> response = await Supabase.instance.client
-          .from('quizzes')
-          .select()
-          .eq('id', widget.qrCode);
+          .rpc('get_quiz_questions', params: {'qr_id': widget.qrCode});
 
       if (response.isNotEmpty) {
         final translated = await Future.wait(response.map((question) async {

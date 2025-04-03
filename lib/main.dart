@@ -340,9 +340,9 @@ class _MyHomePageState extends State<MyHomePage> {
       }
 
       final response = await Supabase.instance.client
-          .from('valid_qr_codes')
-          .select()
-          .ilike('name', '%$currentQuery%');
+          .rpc('search_exhibits', params: {
+        'search_term': currentQuery,
+      });
 
       final locale = Localizations.localeOf(context).languageCode;
       final translated = <Map<String, dynamic>>[];

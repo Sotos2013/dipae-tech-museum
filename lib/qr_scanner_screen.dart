@@ -81,11 +81,9 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
     }
 
     try {
-      final response = await Supabase.instance.client
-          .from('valid_qr_codes')
-          .select()
-          .eq('id', code)
-          .maybeSingle();
+      final List<dynamic> result = await Supabase.instance.client
+          .rpc('get_qr_code_info', params: {'qr_id': code});
+      final response = result.isNotEmpty ? result.first : null;
 
       if (response != null) {
         Navigator.pushReplacement(
