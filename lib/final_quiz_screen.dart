@@ -86,7 +86,7 @@ class _FinalQuizScreenState extends State<FinalQuizScreen> {
   Widget build(BuildContext context) {
     if (isLoading) {
       return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+        body: Center(child: CircularProgressIndicator(color: Colors.white,)),
       );
     }
 
