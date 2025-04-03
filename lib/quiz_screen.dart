@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:untitled1/translation_helper.dart';
@@ -54,7 +53,7 @@ class _QuizScreenState extends State<QuizScreen> {
               answer['text'] = await TranslationHelper.translate(answer['text'], 'el', 'en');
             }
           }
-
+          answers.shuffle();
           return {
             'question': translatedQ,
             'answers': answers,
