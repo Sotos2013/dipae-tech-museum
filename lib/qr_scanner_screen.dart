@@ -29,20 +29,6 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
   @override
   void initState() {
     super.initState();
-
-    if (kIsWeb) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              AppLocalizations.of(context)!.webFlashTip,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      });
-    }
   }
 
   @override
