@@ -825,11 +825,11 @@ class _MyHomePageState extends State<MyHomePage> {
           context,
           MaterialPageRoute(
             builder: (_) => QRInfoScreen(
-              id: randomExhibit!['id'],
-              name: randomExhibit!['name'],
-              name_en: randomExhibit!['name_en'],
-              description: randomExhibit!['description'],
-              imageUrl: randomExhibit!['imageUrl'],
+              id: randomExhibit!['id'] ?? '',
+              name: randomExhibit!['name'] ?? '',
+              name_en: randomExhibit!['name_en'] ?? '',
+              description: randomExhibit!['description'] ?? '',
+              imageUrl: randomExhibit!['imageUrl'] ?? '',
             ),
           ),
         ).then((_) => _fetchRandomExhibit());

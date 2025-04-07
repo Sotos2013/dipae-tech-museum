@@ -59,7 +59,7 @@ class _QRInfoScreenState extends State<QRInfoScreen> {
       }
     }
 
-    translatedDescription = description ?? widget.description;
+    translatedDescription = description;
     if (mounted) setState(() => isTranslating = false);
   }
 
@@ -134,7 +134,9 @@ class _QRInfoScreenState extends State<QRInfoScreen> {
                   ),
                   const SizedBox(height: 15),
                   Text(
-                    name,
+                    (Localizations.localeOf(context).languageCode == 'el'
+                        ? widget.name
+                        : widget.name_en) ?? 'Χωρίς όνομα',
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: 22,
