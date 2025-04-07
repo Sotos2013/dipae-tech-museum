@@ -76,11 +76,11 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
           context,
           MaterialPageRoute(
             builder: (context) => QRInfoScreen(
-              id: response['id'],
-              name: response['name'],
-              name_en: response['name_en'],
-              description: response['description'],
-              imageUrl: response['imageUrl'],
+              id: response['id'] ?? '',
+              name: response['name'] ?? '',
+              name_en: response['name_en'] ?? '',
+              description: response['description'] ?? '',
+              imageUrl: response['imageUrl'] ?? '',
             ),
           ),
         );
