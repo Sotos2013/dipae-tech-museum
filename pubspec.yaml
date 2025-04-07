@@ -76,6 +76,7 @@ flutter:
   assets:
     - assets/ihu_logo.png
     - .env
+    - assets/playstore-icon.png
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

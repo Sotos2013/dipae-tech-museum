@@ -127,12 +127,15 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF005580),
+      backgroundColor: const Color(0xFF163E66),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.museum, size: 100, color: Colors.white),
+          Image.asset(
+          'assets/playstore-icon.png',
+          height: 100,
+        ),
             const SizedBox(height: 20),
             Text(
               AppLocalizations.of(context)!.museumTitle,
