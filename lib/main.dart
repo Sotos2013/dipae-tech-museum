@@ -733,7 +733,14 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget _buildFeedbackButton(BuildContext context) {
     return ElevatedButton(
       onPressed: () async {
-        final url = Uri.parse("https://docs.google.com/forms/d/e/1FAIpQLSeve-CdFpu5gper6D2QnmHu6cs99fqvGeK7A2UCNmk6JRZWjQ/viewform");
+        final locale = Localizations.localeOf(context).languageCode;
+
+        final url = Uri.parse(
+          locale == 'en'
+              ? "https://docs.google.com/forms/d/e/1FAIpQLScNlIzKkxiP1jgLTaUS-3xiQjYt6O7UMpZ3rm1gGygJazSiKg/viewform" // Αγγλικό form
+              : "https://docs.google.com/forms/d/e/1FAIpQLSeve-CdFpu5gper6D2QnmHu6cs99fqvGeK7A2UCNmk6JRZWjQ/viewform", // Ελληνικό form
+        );
+
         if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(AppLocalizations.of(context)!.noInternet)),
@@ -750,6 +757,7 @@ class _MyHomePageState extends State<MyHomePage> {
       child: Text(AppLocalizations.of(context)!.questionnaire),
     );
   }
+
   Widget _buildFinalQuizButton(BuildContext context) {
     return ElevatedButton.icon(
       onPressed: () {
