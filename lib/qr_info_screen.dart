@@ -8,6 +8,7 @@ import 'main.dart';
 class QRInfoScreen extends StatefulWidget {
   final String id;
   final String name;
+  final String name_en;
   final String description;
   final String imageUrl;
 
@@ -15,6 +16,7 @@ class QRInfoScreen extends StatefulWidget {
     Key? key,
     required this.id,
     required this.name,
+    required this.name_en,
     required this.description,
     required this.imageUrl,
   }) : super(key: key);
@@ -24,20 +26,13 @@ class QRInfoScreen extends StatefulWidget {
 }
 
 class _QRInfoScreenState extends State<QRInfoScreen> {
-  String translatedName = '';
   String translatedDescription = '';
   bool isTranslating = false;
-  String? _currentLocale;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final locale = Localizations.localeOf(context).languageCode;
-
-    if (_currentLocale != locale) {
-      _currentLocale = locale;
-      _handleTranslation();
-    }
+    _handleTranslation();
   }
 
   Future<void> _handleTranslation() async {
@@ -45,33 +40,38 @@ class _QRInfoScreenState extends State<QRInfoScreen> {
     setState(() => isTranslating = true);
 
     final prefs = await SharedPreferences.getInstance();
-    final nameKey = 'trans_${widget.name}_$locale';
     final descKey = 'trans_${widget.description}_$locale';
-    String? name = prefs.getString(nameKey);
+
     String? description = prefs.getString(descKey);
-    if (name == null || description == null) {
-      // Δεν υπήρχε cache — κάνουμε μετάφραση
-      if (locale == 'en') {
-        name = await TranslationHelper.translate(widget.name, 'el', 'en');
-        description = await TranslationHelper.translate(widget.description, 'el', 'en');
-      } else {
-        name = await TranslationHelper.translate(widget.name, 'en', 'el');
-        description = await TranslationHelper.translate(widget.description, 'en', 'el');
+    if (description == null) {
+      try {
+        if (locale == 'en') {
+          description = await TranslationHelper.translate(widget.description, 'el', 'en');
+        } else {
+          description = await TranslationHelper.translate(widget.description, 'en', 'el');
+        }
+
+        if (description != null) {
+          await prefs.setString(descKey, description);
+        }
+      } catch (e) {
+        description = widget.description;
       }
-      // Αποθηκευση στο cache
-      await prefs.setString(nameKey, name);
-      await prefs.setString(descKey, description);
     }
 
-    translatedName = name;
-    translatedDescription = description;
+    translatedDescription = description ?? widget.description;
     if (mounted) setState(() => isTranslating = false);
   }
 
   @override
   Widget build(BuildContext context) {
     final locale = Localizations.localeOf(context).languageCode;
-    String encodedUrl = Uri.encodeFull(widget.imageUrl);
+    final encodedUrl = Uri.encodeFull(widget.imageUrl);
+
+    // 🔄 Υπολογισμός σωστού ονόματος ανάλογα με τη γλώσσα
+    final name = locale == 'en'
+        ? (widget.name_en.isNotEmpty ? widget.name_en : widget.name)
+        : (widget.name.isNotEmpty ? widget.name : widget.name_en);
 
     return Scaffold(
       appBar: AppBar(
@@ -87,7 +87,8 @@ class _QRInfoScreenState extends State<QRInfoScreen> {
               MyApp.setLocale(context, newLocale);
               await Future.delayed(const Duration(milliseconds: 100));
               if (mounted) {
-                _handleTranslation();
+                _handleTranslation(); // Ξαναμετάφραση της περιγραφής
+                setState(() {}); // ✅ Ανανεώνει το UI ώστε να αλλάξει και το όνομα
               }
             },
           ),
@@ -133,7 +134,7 @@ class _QRInfoScreenState extends State<QRInfoScreen> {
                   ),
                   const SizedBox(height: 15),
                   Text(
-                    translatedName,
+                    name,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: 22,

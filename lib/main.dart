@@ -290,6 +290,7 @@ class _MyHomePageState extends State<MyHomePage> {
       if (response == null) return;
 
       String name = response["name"] ?? "Άγνωστο Έκθεμα";
+      String name_en = response["name_en"] ?? "Άγνωστο Έκθεμα";
       String description = response["description"] ?? "Δεν υπάρχει περιγραφή.";
       final locale = Localizations.localeOf(context).languageCode;
 
@@ -306,8 +307,9 @@ class _MyHomePageState extends State<MyHomePage> {
         randomExhibit = {
           "id": response["id"],
           "name": name,
+          "name_en": name_en,
           "description": description,
-          "imageUrl": response["imageUrl"] ?? "",
+          "imageUrl": response["imageUrl"],
         };
       });
     } catch (e) {
@@ -370,8 +372,9 @@ class _MyHomePageState extends State<MyHomePage> {
         }
 
         translated.add({
-          "id": exhibit["id"],
-          "name": name,
+          "id": exhibit["id"] ?? "",
+          "name": exhibit["name"] ?? "",
+          "name_en": exhibit["name_en"] ?? "",
           "description": description,
           "imageUrl": exhibit["imageUrl"] ?? "",
         });
@@ -647,16 +650,22 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
   Widget _buildExhibitTile(BuildContext context, Map<String, dynamic> exhibit) {
+    final locale = Localizations.localeOf(context).languageCode;
+    final displayName = locale == 'en'
+        ? exhibit['name_en'] ?? exhibit['name'] ?? ''
+        : exhibit['name'] ?? exhibit['name_en'] ?? '';
+
     return ListTile(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (_) => QRInfoScreen(
-              id: exhibit['id'],
-              name: exhibit['name'],
-              description: exhibit['description'],
-              imageUrl: exhibit['imageUrl'],
+              id: exhibit['id'] ?? '',
+              name: exhibit['name'] ?? '',
+              name_en: exhibit['name_en'] ?? '',
+              description: exhibit['description'] ?? '',
+              imageUrl: exhibit['imageUrl'] ?? '',
             ),
           ),
         );
@@ -667,18 +676,26 @@ class _MyHomePageState extends State<MyHomePage> {
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: Image.network(
-              exhibit['imageUrl'],
+              exhibit['imageUrl'] ?? '',
               width: 50,
               height: 50,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, size: 50, color: Color(0xFFD41C1C)),
+              errorBuilder: (_, __, ___) => const Icon(
+                Icons.broken_image,
+                size: 50,
+                color: Color(0xFFD41C1C),
+              ),
             ),
           ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              exhibit['name'],
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+              displayName,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
@@ -686,13 +703,14 @@ class _MyHomePageState extends State<MyHomePage> {
         ],
       ),
       subtitle: Text(
-        exhibit['description'],
+        exhibit['description'] ?? '',
         style: const TextStyle(fontSize: 14, color: Colors.white70),
         maxLines: 3,
         overflow: TextOverflow.ellipsis,
       ),
     );
   }
+
   Future<void> _onRefresh() async {
     final connectivityResult = await Connectivity().checkConnectivity();
     final hasInternet = connectivityResult != ConnectivityResult.none;
@@ -809,6 +827,7 @@ class _MyHomePageState extends State<MyHomePage> {
             builder: (_) => QRInfoScreen(
               id: randomExhibit!['id'],
               name: randomExhibit!['name'],
+              name_en: randomExhibit!['name_en'],
               description: randomExhibit!['description'],
               imageUrl: randomExhibit!['imageUrl'],
             ),
@@ -822,17 +841,22 @@ class _MyHomePageState extends State<MyHomePage> {
           children: [
             ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
-              child: Image.network(
+              child: randomExhibit!['imageUrl'] != null && randomExhibit!['imageUrl'].toString().isNotEmpty
+                  ? Image.network(
                 randomExhibit!['imageUrl'],
                 height: 150,
                 width: double.infinity,
                 fit: BoxFit.cover,
-              ),
+                errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, size: 100, color: Colors.red),
+              )
+                  : const Icon(Icons.broken_image, size: 150, color: Colors.red),
             ),
             Padding(
               padding: const EdgeInsets.all(10.0),
               child: Text(
-                "${AppLocalizations.of(context)!.randomExhibit} : ${randomExhibit!['name']}",
+                "${AppLocalizations.of(context)!.randomExhibit} : ${(Localizations.localeOf(context).languageCode == 'en'
+                    ? randomExhibit!['name_en']
+                    : randomExhibit!['name']) ?? ''}",
                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
