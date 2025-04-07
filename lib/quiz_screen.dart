@@ -135,7 +135,7 @@ class _QuizScreenState extends State<QuizScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text("${AppLocalizations.of(context)!.question}  ${currentQuestionIndex + 1} / ${questions.length}"),
-        backgroundColor: Colors.green,
+        backgroundColor: Color(0xFF005580),
       ),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -165,7 +165,7 @@ class _QuizScreenState extends State<QuizScreen> {
                       child: ElevatedButton(
                         onPressed: () => _checkAnswer(answer['correct']),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFD41C1C),
+                          backgroundColor: const Color(0xFF005580),
                           foregroundColor: Colors.white,
                           minimumSize: const Size(double.infinity, 40),
                           textStyle: const TextStyle(fontSize: 15),

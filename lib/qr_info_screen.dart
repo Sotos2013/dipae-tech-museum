@@ -92,7 +92,7 @@ class _QRInfoScreenState extends State<QRInfoScreen> {
             },
           ),
         ],
-        backgroundColor: const Color(0xFFD41C1C),
+        backgroundColor: const Color(0xFF005580),
       ),
       backgroundColor: const Color(0xFF224366),
       body: isTranslating

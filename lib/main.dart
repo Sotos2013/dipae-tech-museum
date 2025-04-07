@@ -29,7 +29,7 @@ void main() async {
   runApp(const MyApp());
 }
 
-// 🔁 Κάνε το Stateful για δυναμική αλλαγή γλώσσας
+// Stateful για δυναμική αλλαγή γλώσσας
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
@@ -84,10 +84,10 @@ class _MyAppState extends State<MyApp> {
         GlobalWidgetsLocalizations.delegate,
       ],
       theme: ThemeData(
-        primaryColor: const Color(0xFFD41C1C),
+        primaryColor: const Color(0xFF005580),
         scaffoldBackgroundColor: const Color(0xFF224366),
         appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFFD41C1C),
+          backgroundColor: Color(0xFF005580),
           titleTextStyle: TextStyle(
               color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
         ),
@@ -112,7 +112,7 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
 
-    // Εκτελείται αφού φορτωθεί πλήρως η πρώτη frame
+    // Εκτελείται αφού φορτωθεί πλήρως το πρώτο frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Future.delayed(const Duration(seconds: 3), () {
         if (!mounted) return;
@@ -201,7 +201,7 @@ class _ConnectionCheckScreenState extends State<ConnectionCheckScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFF005580),
+      backgroundColor: Color(0xFF224366),
       body: _isChecking
           ? const Center(child: CircularProgressIndicator(color: Colors.white,))
           : Center(
@@ -219,7 +219,7 @@ class _ConnectionCheckScreenState extends State<ConnectionCheckScreen> {
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _checkInternet,
-              child: Text(AppLocalizations.of(context)!.retry),
+              child: Text(AppLocalizations.of(context)!.retry, style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF224366))),
             ),
           ],
         ),
@@ -369,7 +369,7 @@ class _MyHomePageState extends State<MyHomePage> {
         });
       }
 
-      // 🧠 Εξασφάλιση ότι το query δεν άλλαξε στο μεταξύ
+      //Εξασφάλιση ότι το query δεν άλλαξε στο μεταξύ
       if (currentQuery == searchController.text.trim()) {
         if (mounted) {
           setState(() {
@@ -599,18 +599,32 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
   Widget _buildSearchBar(BuildContext context) {
-    return TextField(
-      controller: searchController,
-      decoration: InputDecoration(
-        labelText: AppLocalizations.of(context)!.searchPlaceholder,
-        prefixIcon: const Icon(Icons.search),
-        filled: true,
-        fillColor: Colors.white,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Color(0xFF005580),
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
-      onChanged: _searchExhibits,
+      child: TextField(
+        controller: searchController,
+        decoration: InputDecoration(
+          hintText: AppLocalizations.of(context)!.searchPlaceholder,
+          prefixIcon: const Icon(Icons.search, color: Color(0xFF005580)),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+        ),
+        onChanged: _searchExhibits,
+      ),
     );
   }
+
   Widget _buildSearchResults(BuildContext context) {
     if (searchResults.isEmpty) {
       return Center(

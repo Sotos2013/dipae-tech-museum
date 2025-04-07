@@ -107,7 +107,7 @@ class _FinalQuizScreenState extends State<FinalQuizScreen> {
     final q = questions[currentQuestionIndex];
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.green,
+        backgroundColor: Color(0xFF005580),
         title: Text("${AppLocalizations.of(context)!.question} ${currentQuestionIndex + 1} / ${questions.length}"),
       ),
       body: Center(
@@ -131,7 +131,7 @@ class _FinalQuizScreenState extends State<FinalQuizScreen> {
                     child: ElevatedButton(
                       onPressed: () => _checkAnswer(a['correct']),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFD41C1C),
+                        backgroundColor: const Color(0xFF005580),
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                       ),

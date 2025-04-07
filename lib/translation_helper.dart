@@ -31,10 +31,8 @@ class TranslationHelper {
         final data = jsonDecode(response.body);
         final translatedText = data['responseData']['translatedText'];
 
-        // 💾 Αποθηκεύει τη μετάφραση στο SharedPreferences
+        //Αποθηκεύει τη μετάφραση στο SharedPreferences
         await prefs.setString(cacheKey, translatedText);
-
-        print('🌍 Μετάφραση απο API και αποθήκευση: "$text" ➜ "$translatedText"');
         return translatedText;
       } else {
         print('❌ Σφάλμα MyMemory: ${response.statusCode} - ${response.body}');
