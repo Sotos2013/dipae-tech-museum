@@ -327,6 +327,7 @@ class _MyHomePageState extends State<MyHomePage> {
       });
       return;
     }
+
     _debounce = Timer(const Duration(milliseconds: 300), () async {
       final currentQuery = searchController.text.trim();
 
@@ -340,25 +341,32 @@ class _MyHomePageState extends State<MyHomePage> {
         return;
       }
 
+      // Εντοπισμός της γλώσσας
+      final locale = Localizations.localeOf(context).languageCode;
+      String searchColumn = locale == 'en' ? 'name_en' : 'name';  // Αν είναι Αγγλικά, αναζητά στο name_en
+
+      // Κλήση στη βάση δεδομένων για την αναζήτηση
       final response = await Supabase.instance.client
           .rpc('search_exhibits', params: {
         'search_term': currentQuery,
+        'lang': searchColumn,
       });
 
-      final locale = Localizations.localeOf(context).languageCode;
       final translated = <Map<String, dynamic>>[];
 
+      // Διατρέχουμε τα αποτελέσματα και τα εμφανίζουμε
       for (var exhibit in response) {
         String name = exhibit["name"] ?? "Άγνωστο Έκθεμα";
+        String name_en = exhibit["name_en"] ?? "Unknown Exhibit";
         String description = exhibit["description"] ?? "Δεν υπάρχει περιγραφή.";
 
+        // Αν η γλώσσα είναι Αγγλικά, χρησιμοποιούμε το name_en και μεταφράζουμε την περιγραφή
         if (locale == 'en') {
+          name = name_en;
           final t = await Future.wait([
-            TranslationHelper.translate(name, 'el', 'en'),
             TranslationHelper.translate(description, 'el', 'en'),
           ]);
-          name = t[0];
-          description = t[1];
+          description = t[0];
         }
 
         translated.add({
@@ -369,7 +377,7 @@ class _MyHomePageState extends State<MyHomePage> {
         });
       }
 
-      //Εξασφάλιση ότι το query δεν άλλαξε στο μεταξύ
+      // Εξασφαλίζουμε ότι το query δεν έχει αλλάξει
       if (currentQuery == searchController.text.trim()) {
         if (mounted) {
           setState(() {

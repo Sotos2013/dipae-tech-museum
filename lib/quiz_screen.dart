@@ -162,21 +162,28 @@ class _QuizScreenState extends State<QuizScreen> {
                   ...(question['answers'] as List<dynamic>).map((answer) {
                     return Padding(
                       padding: const EdgeInsets.symmetric(vertical: 6.0),
-                      child: ElevatedButton(
-                        onPressed: () => _checkAnswer(answer['correct']),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF005580),
-                          foregroundColor: Colors.white,
-                          minimumSize: const Size(double.infinity, 40),
-                          textStyle: const TextStyle(fontSize: 15),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
+                      child: Center(
+                        child: ElevatedButton(
+                          onPressed: () => _checkAnswer(answer['correct']),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF005580),
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size(double.infinity, 40),
+                            textStyle: const TextStyle(fontSize: 15),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                          ),
+                          child: Center(
+                            child: Text(
+                              answer['text'],
+                              textAlign: TextAlign.center,
+                            ),
                           ),
                         ),
-                        child: Text(answer['text']),
                       ),
                     );
-                  }).toList(),
+                  }),
                 ],
               ),
             ),
