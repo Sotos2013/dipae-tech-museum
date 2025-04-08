@@ -361,13 +361,10 @@ class _MyHomePageState extends State<MyHomePage> {
 
       // Διατρέχουμε τα αποτελέσματα και τα εμφανίζουμε
       for (var exhibit in response) {
-        String name = exhibit["name"] ?? "Άγνωστο Έκθεμα";
-        String name_en = exhibit["name_en"] ?? "Unknown Exhibit";
         String description = exhibit["description"] ?? "Δεν υπάρχει περιγραφή.";
 
         // Αν η γλώσσα είναι Αγγλικά, χρησιμοποιούμε το name_en και μεταφράζουμε την περιγραφή
         if (locale == 'en') {
-          name = name_en;
           final t = await Future.wait([
             TranslationHelper.translate(description, 'el', 'en'),
           ]);
@@ -542,7 +539,21 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context)!.museumTitle),
+        title: GestureDetector(
+          onTap: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const MyHomePage()),
+            );
+          },
+          child: Text(
+            AppLocalizations.of(context)!.museumTitle,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.help_outline, color: Colors.white),
@@ -554,7 +565,7 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
           IconButton(
             icon: const Icon(Icons.language, color: Colors.white),
-            onPressed: () {
+            onPressed: () async {
               final currentLang = Localizations.localeOf(context).languageCode;
               final newLocale = currentLang == 'el' ? const Locale('en') : const Locale('el');
               MyApp.setLocale(context, newLocale);
