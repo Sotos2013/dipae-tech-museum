@@ -8,6 +8,7 @@
   "tapExhibitHelp": "Tap an exhibit to see more information.",
   "scanQrHelp": "Use the QR scanner to scan physical QR codes.",
   "changeLanguageHelp": "Change language from the 🌐 icon at the top right.",
+  "tapHelp": "\uD83D\uDD0D When you are in the search and want to return to the home screen, click on 'IHU Tech Museum' in the top left.",
 
   "randomExhibit": "\uD83D\uDD00 Random Exhibit",
   "noResults": "❌ No results found",

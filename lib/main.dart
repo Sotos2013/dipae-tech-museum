@@ -504,6 +504,7 @@ class _MyHomePageState extends State<MyHomePage> {
               _buildHelpRow(Icons.info_outline, AppLocalizations.of(context)!.tapExhibitHelp),
               _buildHelpRow(Icons.qr_code_scanner, AppLocalizations.of(context)!.scanQrHelp),
               _buildHelpRow(Icons.language, AppLocalizations.of(context)!.changeLanguageHelp),
+              _buildHelpRow(Icons.touch_app_rounded, AppLocalizations.of(context)!.tapHelp),
             ],
           ),
           actions: [
