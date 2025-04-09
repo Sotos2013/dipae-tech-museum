@@ -134,9 +134,7 @@ class _QRInfoScreenState extends State<QRInfoScreen> {
                   ),
                   const SizedBox(height: 15),
                   Text(
-                    (Localizations.localeOf(context).languageCode == 'el'
-                        ? widget.name
-                        : widget.name_en) ?? 'Χωρίς όνομα',
+                    name,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: 22,

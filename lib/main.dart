@@ -299,11 +299,9 @@ class _MyHomePageState extends State<MyHomePage> {
 
       if (locale == 'en') {
         final translations = await Future.wait([
-          TranslationHelper.translate(name, 'el', 'en'),
           TranslationHelper.translate(description, 'el', 'en'),
         ]);
-        name = translations[0];
-        description = translations[1];
+        description = translations[0];
       }
 
       setState(() {
