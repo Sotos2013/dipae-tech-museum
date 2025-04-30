@@ -287,12 +287,18 @@ class _MyHomePageState extends State<MyHomePage> {
   void initState() {
     _searchFocusNode.addListener(() {
       if (mounted) {
-        setState(() {
-          _searchFocused = _searchFocusNode.hasFocus;
-          _showWebCategoryMenu = kIsWeb && _searchFocusNode.hasFocus;
+        final hasFocus = _searchFocusNode.hasFocus;
+
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (mounted) {
+            setState(() {
+              _searchFocused = hasFocus;
+              _showWebCategoryMenu = kIsWeb && hasFocus;
+            });
+          }
         });
 
-        if (_searchFocusNode.hasFocus) {
+        if (hasFocus) {
           _searchExhibits('%');
         }
       }
@@ -797,119 +803,69 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget _buildSearchBar(BuildContext context) {
     final locale = Localizations.localeOf(context).languageCode;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  focusNode: _searchFocusNode,
-                  controller: searchController,
-                  decoration: InputDecoration(
-                    hintText: AppLocalizations.of(context)!.searchPlaceholder,
-                    filled: true,
-                    fillColor: Colors.white,
-                    prefixIcon: const Icon(Icons.search, color: Color(0xFF005580)),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-                  ),
-                  onChanged: _searchExhibits,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              focusNode: _searchFocusNode,
+              controller: searchController,
+              decoration: InputDecoration(
+                hintText: AppLocalizations.of(context)!.searchPlaceholder,
+                filled: true,
+                fillColor: Colors.white,
+                prefixIcon: const Icon(Icons.search, color: Color(0xFF005580)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  borderSide: BorderSide.none,
                 ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
               ),
-              if (!kIsWeb && _searchFocused)
-                IconButton(
-                  icon: Icon(categories[_selectedIndex]['icon'], color: Colors.white),
-                  tooltip: AppLocalizations.of(context)!.chooseCategory,
-                  onPressed: () async {
-                    final selected = await showMenu<String>(
-                      context: context,
-                      position: const RelativeRect.fromLTRB(100, 100, 0, 0),
-                      items: categories.map((category) {
-                        final title = locale == 'en' ? category['name_en'] : category['name'];
-                        return PopupMenuItem<String>(
-                          value: category['id'],
-                          child: Row(
-                            children: [
-                              Icon(category['icon'], color: Colors.black),
-                              const SizedBox(width: 10),
-                              Text(title),
-                            ],
-                          ),
-                        );
-                      }).toList(),
-                    );
-
-                    if (!mounted || selected == null) return;
-
-                    final index = categories.indexWhere((c) => c['id'] == selected);
-                    setState(() => _selectedIndex = index);
-
-                    final query = searchController.text.trim();
-                    if (query.isEmpty) {
-                      await _fetchAllExhibitsByCategory(selected);
-                      setState(() => isSearching = true);
-                    } else {
-                      _searchExhibits(query);
-                    }
-                  },
-                ),
-            ],
-          ),
-        ),
-        if (kIsWeb && _showWebCategoryMenu)
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 6,
-                ),
-              ],
-            ),
-            child: Wrap(
-              spacing: 8,
-              children: categories.map((category) {
-                final isSelected = category['id'] == categories[_selectedIndex]['id'];
-                final title = locale == 'en' ? category['name_en'] : category['name'];
-                return ChoiceChip(
-                  label: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(category['icon'], size: 16, color: isSelected ? Colors.white : Colors.black),
-                      const SizedBox(width: 5),
-                      Text(title),
-                    ],
-                  ),
-                  selected: isSelected,
-                  selectedColor: const Color(0xFF005580),
-                  backgroundColor: Colors.grey[200],
-                  onSelected: (_) async {
-                    final index = categories.indexWhere((c) => c['id'] == category['id']);
-                    setState(() => _selectedIndex = index);
-
-                    final query = searchController.text.trim();
-                    if (query.isEmpty) {
-                      await _fetchAllExhibitsByCategory(category['id']);
-                      setState(() => isSearching = true);
-                    } else {
-                      _searchExhibits(query);
-                    }
-                  },
-                );
-              }).toList(),
+              onChanged: _searchExhibits,
             ),
           ),
-      ],
+          IconButton(
+            icon: Icon(categories[_selectedIndex]['icon'], color: Colors.white),
+            tooltip: AppLocalizations.of(context)!.chooseCategory,
+            onPressed: () async {
+              // Καθυστέρηση ώστε να μη χαθεί το focus και εξαφανιστεί το menu αμέσως
+              await Future.delayed(const Duration(milliseconds: 100));
+
+              final selected = await showMenu<String>(
+                context: context,
+                position: const RelativeRect.fromLTRB(100, 100, 0, 0),
+                items: categories.map((category) {
+                  final title = locale == 'en' ? category['name_en'] : category['name'];
+                  return PopupMenuItem<String>(
+                    value: category['id'],
+                    child: Row(
+                      children: [
+                        Icon(category['icon'], color: Colors.black),
+                        const SizedBox(width: 10),
+                        Text(title),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              );
+
+              if (!mounted || selected == null) return;
+
+              final index = categories.indexWhere((c) => c['id'] == selected);
+              setState(() => _selectedIndex = index);
+
+              final query = searchController.text.trim();
+              if (query.isEmpty) {
+                await _fetchAllExhibitsByCategory(selected);
+                setState(() => isSearching = true);
+              } else {
+                _searchExhibits(query);
+              }
+            },
+          ),
+        ],
+      ),
     );
   }
 
