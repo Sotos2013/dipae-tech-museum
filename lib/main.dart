@@ -792,44 +792,13 @@ class _MyHomePageState extends State<MyHomePage> {
                   onChanged: _searchExhibits,
                 ),
               ),
-              if (_searchFocused)
-                kIsWeb
-                    ? PopupMenuButton<String>(
-                  icon: Icon(categories[_selectedIndex]['icon'], color: Colors.white),
-                  tooltip: AppLocalizations.of(context)!.chooseCategory,
-                  onSelected: (String selected) async {
-                    final index = categories.indexWhere((c) => c['id'] == selected);
-                    if (!mounted) return;
-                    setState(() => _selectedIndex = index);
-                    await _fetchExhibitsByCategory(selected);
-                    if (searchController.text.trim().isNotEmpty) {
-                      _searchExhibits(searchController.text.trim());
-                    }
-                  },
-                  itemBuilder: (BuildContext context) {
-                    return categories.map((category) {
-                      final title = locale == 'en' ? category['name_en'] : category['name'];
-                      return PopupMenuItem<String>(
-                        value: category['id'],
-                        child: Row(
-                          children: [
-                            Icon(category['icon'], color: Colors.black),
-                            const SizedBox(width: 10),
-                            Text(title),
-                          ],
-                        ),
-                      );
-                    }).toList();
-                  },
-                )
-                    : Builder(
+              if (_searchFocused && !kIsWeb && Platform.isAndroid)
+                Builder(
                   builder: (popupContext) {
                     return IconButton(
                       icon: Icon(categories[_selectedIndex]['icon'], color: Colors.white),
                       tooltip: AppLocalizations.of(context)!.chooseCategory,
                       onPressed: () async {
-                        FocusScope.of(context).unfocus(); // Κλείσιμο πληκτρολογίου
-
                         final RenderBox button = popupContext.findRenderObject() as RenderBox;
                         final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
 
@@ -864,7 +833,6 @@ class _MyHomePageState extends State<MyHomePage> {
                         final index = categories.indexWhere((c) => c['id'] == selected);
                         setState(() => _selectedIndex = index);
                         await _fetchExhibitsByCategory(selected);
-
                         if (searchController.text.trim().isNotEmpty) {
                           _searchExhibits(searchController.text.trim());
                         }
@@ -875,6 +843,53 @@ class _MyHomePageState extends State<MyHomePage> {
             ],
           ),
         ),
+
+        // Web-only dropdown κάτω από το search bar
+        if (_searchFocused && kIsWeb)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF005580).withOpacity(0.3),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: categories[_selectedIndex]['id'],
+                  icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
+                  items: categories.map((category) {
+                    final title = locale == 'en' ? category['name_en'] : category['name'];
+                    return DropdownMenuItem<String>(
+                      value: category['id'],
+                      child: Row(
+                        children: [
+                          Icon(category['icon'], color: Colors.black),
+                          const SizedBox(width: 10),
+                          Text(title),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (String? selected) async {
+                    if (selected == null) return;
+                    final index = categories.indexWhere((c) => c['id'] == selected);
+                    setState(() => _selectedIndex = index);
+                    await _fetchExhibitsByCategory(selected);
+                    if (searchController.text.trim().isNotEmpty) {
+                      _searchExhibits(searchController.text.trim());
+                    }
+                  },
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }
