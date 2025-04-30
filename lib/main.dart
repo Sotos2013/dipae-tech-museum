@@ -801,6 +801,10 @@ class _MyHomePageState extends State<MyHomePage> {
                 icon: Icon(categories[_selectedIndex]['icon'], color: Colors.white),
                 tooltip: AppLocalizations.of(context)!.chooseCategory,
                 onPressed: () async {
+                  await Future.delayed(Duration.zero);
+
+                  if (!mounted) return;
+
                   final RenderBox button = popupContext.findRenderObject() as RenderBox;
                   final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
 
@@ -835,7 +839,9 @@ class _MyHomePageState extends State<MyHomePage> {
 
                   final index = categories.indexWhere((c) => c['id'] == selected);
                   setState(() => _selectedIndex = index);
+
                   await _fetchExhibitsByCategory(selected);
+
                   if (searchController.text.trim().isNotEmpty) {
                     _searchExhibits(searchController.text.trim());
                   }
