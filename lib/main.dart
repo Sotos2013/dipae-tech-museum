@@ -765,62 +765,49 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Widget _buildSearchBar(BuildContext context) {
-    return Row(
+    final locale = Localizations.localeOf(context).languageCode;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF005580).withOpacity(0.3),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: TextField(
-              focusNode: _searchFocusNode,
-              controller: searchController,
-              decoration: InputDecoration(
-                hintText: AppLocalizations.of(context)!.searchPlaceholder,
-                prefixIcon: const Icon(Icons.search, color: Color(0xFF005580)),
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-              ),
-              onChanged: _searchExhibits,
-            ),
-          ),
-        ),
-        if (_searchFocused)
-          Builder(
-            builder: (popupContext) {
-              return IconButton(
-                icon: Icon(categories[_selectedIndex]['icon'], color: Colors.white),
-                tooltip: AppLocalizations.of(context)!.chooseCategory,
-                onPressed: () async {
-                  await Future.delayed(Duration.zero);
-
-                  if (!mounted) return;
-
-                  final RenderBox button = popupContext.findRenderObject() as RenderBox;
-                  final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
-
-                  final RelativeRect position = RelativeRect.fromRect(
-                    Rect.fromPoints(
-                      button.localToGlobal(Offset.zero, ancestor: overlay),
-                      button.localToGlobal(button.size.bottomRight(Offset.zero), ancestor: overlay),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  focusNode: _searchFocusNode,
+                  controller: searchController,
+                  decoration: InputDecoration(
+                    hintText: AppLocalizations.of(context)!.searchPlaceholder,
+                    filled: true,
+                    fillColor: Colors.white,
+                    prefixIcon: const Icon(Icons.search, color: Color(0xFF005580)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      borderSide: BorderSide.none,
                     ),
-                    Offset.zero & overlay.size,
-                  );
-
-                  final selected = await showMenu<String>(
-                    context: context,
-                    position: position,
-                    items: categories.map((category) {
-                      final locale = Localizations.localeOf(context).languageCode;
+                    contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                  ),
+                  onChanged: _searchExhibits,
+                ),
+              ),
+              if (_searchFocused)
+                kIsWeb
+                    ? PopupMenuButton<String>(
+                  icon: Icon(categories[_selectedIndex]['icon'], color: Colors.white),
+                  tooltip: AppLocalizations.of(context)!.chooseCategory,
+                  onSelected: (String selected) async {
+                    final index = categories.indexWhere((c) => c['id'] == selected);
+                    if (!mounted) return;
+                    setState(() => _selectedIndex = index);
+                    await _fetchExhibitsByCategory(selected);
+                    if (searchController.text.trim().isNotEmpty) {
+                      _searchExhibits(searchController.text.trim());
+                    }
+                  },
+                  itemBuilder: (BuildContext context) {
+                    return categories.map((category) {
                       final title = locale == 'en' ? category['name_en'] : category['name'];
                       return PopupMenuItem<String>(
                         value: category['id'],
@@ -832,23 +819,62 @@ class _MyHomePageState extends State<MyHomePage> {
                           ],
                         ),
                       );
-                    }).toList(),
-                  );
+                    }).toList();
+                  },
+                )
+                    : Builder(
+                  builder: (popupContext) {
+                    return IconButton(
+                      icon: Icon(categories[_selectedIndex]['icon'], color: Colors.white),
+                      tooltip: AppLocalizations.of(context)!.chooseCategory,
+                      onPressed: () async {
+                        FocusScope.of(context).unfocus(); // Κλείσιμο πληκτρολογίου
 
-                  if (!mounted || selected == null) return;
+                        final RenderBox button = popupContext.findRenderObject() as RenderBox;
+                        final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
 
-                  final index = categories.indexWhere((c) => c['id'] == selected);
-                  setState(() => _selectedIndex = index);
+                        final RelativeRect position = RelativeRect.fromRect(
+                          Rect.fromPoints(
+                            button.localToGlobal(Offset.zero, ancestor: overlay),
+                            button.localToGlobal(button.size.bottomRight(Offset.zero), ancestor: overlay),
+                          ),
+                          Offset.zero & overlay.size,
+                        );
 
-                  await _fetchExhibitsByCategory(selected);
+                        final selected = await showMenu<String>(
+                          context: context,
+                          position: position,
+                          items: categories.map((category) {
+                            final title = locale == 'en' ? category['name_en'] : category['name'];
+                            return PopupMenuItem<String>(
+                              value: category['id'],
+                              child: Row(
+                                children: [
+                                  Icon(category['icon'], color: Colors.black),
+                                  const SizedBox(width: 10),
+                                  Text(title),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                        );
 
-                  if (searchController.text.trim().isNotEmpty) {
-                    _searchExhibits(searchController.text.trim());
-                  }
-                },
-              );
-            },
+                        if (!mounted || selected == null) return;
+
+                        final index = categories.indexWhere((c) => c['id'] == selected);
+                        setState(() => _selectedIndex = index);
+                        await _fetchExhibitsByCategory(selected);
+
+                        if (searchController.text.trim().isNotEmpty) {
+                          _searchExhibits(searchController.text.trim());
+                        }
+                      },
+                    );
+                  },
+                ),
+            ],
           ),
+        ),
       ],
     );
   }
