@@ -239,6 +239,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   Map<String, dynamic>? randomExhibit;
+  bool _showWebCategoryMenu = false;
   final FocusNode _searchFocusNode = FocusNode();
   bool _searchFocused = false;
   List<Map<String, dynamic>> searchResults = [];
@@ -285,13 +286,16 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     _searchFocusNode.addListener(() {
-      if (!mounted) return;
-      if (_searchFocusNode.hasFocus) {
-        _searchExhibits('%');
+      if (mounted) {
+        setState(() {
+          _searchFocused = _searchFocusNode.hasFocus;
+          _showWebCategoryMenu = kIsWeb && _searchFocusNode.hasFocus;
+        });
+
+        if (_searchFocusNode.hasFocus) {
+          _searchExhibits('%');
+        }
       }
-      setState(() {
-        _searchFocused = _searchFocusNode.hasFocus;
-      });
     });
     super.initState();
     _fetchRandomExhibit().then((_) {
@@ -792,7 +796,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Widget _buildSearchBar(BuildContext context) {
     final locale = Localizations.localeOf(context).languageCode;
-    final isWeb = kIsWeb;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -814,62 +817,13 @@ class _MyHomePageState extends State<MyHomePage> {
                       borderRadius: BorderRadius.circular(20),
                       borderSide: BorderSide.none,
                     ),
-                    contentPadding:
-                    const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
                   ),
                   onChanged: _searchExhibits,
                 ),
               ),
-              const SizedBox(width: 8),
-              if (_searchFocused)
-                isWeb
-                    ? Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF005580).withOpacity(0.3),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: categories[_selectedIndex]['id'],
-                      icon: const Icon(Icons.arrow_drop_down),
-                      onChanged: (String? selected) async {
-                        if (selected == null) return;
-                        final index = categories.indexWhere((c) => c['id'] == selected);
-                        setState(() => _selectedIndex = index);
-
-                        final query = searchController.text.trim();
-                        if (query.isEmpty) {
-                          await _fetchAllExhibitsByCategory(selected);
-                          setState(() => isSearching = true);
-                        } else {
-                          _searchExhibits(query);
-                        }
-                      },
-                      items: categories.map((category) {
-                        final title = locale == 'en' ? category['name_en'] : category['name'];
-                        return DropdownMenuItem<String>(
-                          value: category['id'],
-                          child: Row(
-                            children: [
-                              Icon(category['icon'], color: Colors.black),
-                              const SizedBox(width: 10),
-                              Text(title),
-                            ],
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                )
-                    : IconButton(
+              if (!kIsWeb && _searchFocused)
+                IconButton(
                   icon: Icon(categories[_selectedIndex]['icon'], color: Colors.white),
                   tooltip: AppLocalizations.of(context)!.chooseCategory,
                   onPressed: () async {
@@ -908,6 +862,53 @@ class _MyHomePageState extends State<MyHomePage> {
             ],
           ),
         ),
+        if (kIsWeb && _showWebCategoryMenu)
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 6,
+                ),
+              ],
+            ),
+            child: Wrap(
+              spacing: 8,
+              children: categories.map((category) {
+                final isSelected = category['id'] == categories[_selectedIndex]['id'];
+                final title = locale == 'en' ? category['name_en'] : category['name'];
+                return ChoiceChip(
+                  label: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(category['icon'], size: 16, color: isSelected ? Colors.white : Colors.black),
+                      const SizedBox(width: 5),
+                      Text(title),
+                    ],
+                  ),
+                  selected: isSelected,
+                  selectedColor: const Color(0xFF005580),
+                  backgroundColor: Colors.grey[200],
+                  onSelected: (_) async {
+                    final index = categories.indexWhere((c) => c['id'] == category['id']);
+                    setState(() => _selectedIndex = index);
+
+                    final query = searchController.text.trim();
+                    if (query.isEmpty) {
+                      await _fetchAllExhibitsByCategory(category['id']);
+                      setState(() => isSearching = true);
+                    } else {
+                      _searchExhibits(query);
+                    }
+                  },
+                );
+              }).toList(),
+            ),
+          ),
       ],
     );
   }
