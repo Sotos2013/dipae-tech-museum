@@ -46,5 +46,9 @@
   "noQuestions": "❌ No available questions!",
   "quizComplete": "Quiz completed!",
   "question": "Question",
-  "finalQuiz": "Final Quiz"
+  "finalQuiz": "Final Quiz",
+
+  "noExhibitsInCategory": "No exhibits found in this category.",
+  "categoryHelp": "Use the filter to narrow results by category.",
+  "chooseCategory": "Select a category"
 }

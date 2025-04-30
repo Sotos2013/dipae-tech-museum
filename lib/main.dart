@@ -2,9 +2,11 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'dart:io';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:untitled1/translation_helper.dart';
@@ -29,7 +31,6 @@ void main() async {
   runApp(const MyApp());
 }
 
-// Stateful για δυναμική αλλαγή γλώσσας
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
@@ -43,7 +44,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  Locale _locale = const Locale('el'); // default Greek
+  Locale _locale = const Locale('el');
 
   @override
   void initState() {
@@ -74,8 +75,8 @@ class _MyAppState extends State<MyApp> {
       debugShowCheckedModeBanner: false,
       locale: _locale,
       supportedLocales: const [
-        Locale('el'), // 🇬🇷 Ελληνικά
-        Locale('en'), // 🇬🇧 Αγγλικά
+        Locale('el'),
+        Locale('en'),
       ],
       localizationsDelegates: const [
         AppLocalizations.delegate,
@@ -111,8 +112,6 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-
-    // Εκτελείται αφού φορτωθεί πλήρως το πρώτο frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Future.delayed(const Duration(seconds: 3), () {
         if (!mounted) return;
@@ -132,10 +131,10 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-          Image.asset(
-          'assets/playstore-icon.png',
-          height: 100,
-        ),
+            Image.asset(
+              'assets/playstore-icon.png',
+              height: 100,
+            ),
             const SizedBox(height: 20),
             Text(
               AppLocalizations.of(context)!.museumTitle,
@@ -150,6 +149,7 @@ class _SplashScreenState extends State<SplashScreen> {
     );
   }
 }
+
 class ConnectionCheckScreen extends StatefulWidget {
   const ConnectionCheckScreen({Key? key}) : super(key: key);
 
@@ -172,7 +172,7 @@ class _ConnectionCheckScreenState extends State<ConnectionCheckScreen> {
     bool hasInternet = false;
 
     if (kIsWeb) {
-      hasInternet = true; // Web workaround
+      hasInternet = true;
     } else {
       hasInternet = await _hasRealInternet();
     }
@@ -200,13 +200,12 @@ class _ConnectionCheckScreenState extends State<ConnectionCheckScreen> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFF224366),
+      backgroundColor: const Color(0xFF224366),
       body: _isChecking
-          ? const Center(child: CircularProgressIndicator(color: Colors.white,))
+          ? const Center(child: CircularProgressIndicator(color: Colors.white))
           : Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -218,7 +217,7 @@ class _ConnectionCheckScreenState extends State<ConnectionCheckScreen> {
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
             ),
             const SizedBox(height: 10),
-            Text(AppLocalizations.of(context)!.noInternetMessage, style: const TextStyle(color: Colors.white),),
+            Text(AppLocalizations.of(context)!.noInternetMessage, style: const TextStyle(color: Colors.white)),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _checkInternet,
@@ -231,7 +230,6 @@ class _ConnectionCheckScreenState extends State<ConnectionCheckScreen> {
   }
 }
 
-// ✅ **Αρχική Οθόνη**
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
 
@@ -241,18 +239,65 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   Map<String, dynamic>? randomExhibit;
+  final FocusNode _searchFocusNode = FocusNode();
+  bool _searchFocused = false;
   List<Map<String, dynamic>> searchResults = [];
   bool isSearching = false;
   TextEditingController searchController = TextEditingController();
   bool _isOffline = false;
   bool _isLoading = true;
+  int _selectedIndex = 0;
+  bool _showCategories = false;
+
+  final List<Map<String, dynamic>> categories = [
+    {
+      'id': 'all',
+      'name': 'Όλα τα εκθέματα',
+      'name_en': 'All Exhibits',
+      'icon': Icons.all_inclusive,
+    },
+    {
+      'id': 'computers',
+      'name': 'Υπολογιστές',
+      'name_en': 'Computers',
+      'icon': MdiIcons.desktopClassic,
+    },
+    {
+      'id': 'telecommunications',
+      'name': 'Τηλεπικοινωνίες',
+      'name_en': 'Telecommunications',
+      'icon': MdiIcons.transmissionTower,
+    },
+    {
+      'id': 'audio',
+      'name': 'Ήχος & Μουσική',
+      'name_en': 'Audio & Music',
+      'icon': MdiIcons.music,
+    },
+    {
+      'id': 'photography',
+      'name': 'Φωτογραφία',
+      'name_en': 'Photography',
+      'icon': MdiIcons.camera,
+    },
+  ];
+
   @override
   void initState() {
+    _searchFocusNode.addListener(() {
+      if (mounted) {
+        setState(() {
+          _searchFocused = _searchFocusNode.hasFocus;
+        });
+      }
+    });
     super.initState();
     _fetchRandomExhibit().then((_) {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     });
     _startMonitoring();
     _checkAndShowHelpDialog();
@@ -283,7 +328,7 @@ class _MyHomePageState extends State<MyHomePage> {
             backgroundColor: Colors.red,
           ),
         );
-        return; // 🛑 Βγαίνουμε χωρίς να αλλάξουμε το randomExhibit
+        return;
       }
 
       final response = await Supabase.instance.client
@@ -293,7 +338,7 @@ class _MyHomePageState extends State<MyHomePage> {
       if (response == null) return;
 
       String name = response["name"] ?? "Άγνωστο Έκθεμα";
-      String name_en = response["name_en"] ?? "Άγνωστο Έκθεμα";
+      String name_en = response["name_en"] ?? "Unknown Exhibit";
       String description = response["description"] ?? "Δεν υπάρχει περιγραφή.";
       final locale = Localizations.localeOf(context).languageCode;
 
@@ -316,6 +361,61 @@ class _MyHomePageState extends State<MyHomePage> {
     } catch (e) {
       print("❌ Σφάλμα: $e");
     } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _fetchExhibitsByCategory(String categoryId) async {
+    if (!mounted) return;
+    setState(() => _isLoading = true);
+
+    if (categoryId == 'all') {
+      await _fetchRandomExhibit();
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    try {
+      final response = await Supabase.instance.client
+          .rpc('get_exhibits_by_category', params: {
+        'category_input': categoryId,
+      });
+
+      if (!mounted) return;
+      if (response.isEmpty) {
+        setState(() => _isLoading = false);
+        return;
+      }
+      final randomExhibitData = response[Random().nextInt(response.length)];
+
+      String name = randomExhibitData["name"] ?? "Άγνωστο Έκθεμα";
+      String name_en = randomExhibitData["name_en"] ?? "Unknown Exhibit";
+      String description = randomExhibitData["description"] ?? "Δεν υπάρχει περιγραφή.";
+      final locale = Localizations.localeOf(context).languageCode;
+
+      if (locale == 'en') {
+        final translations = await Future.wait([
+          TranslationHelper.translate(description, 'el', 'en'),
+        ]);
+        description = translations[0];
+      }
+
+      if (!mounted) return;
+      setState(() {
+        randomExhibit = {
+          "id": randomExhibitData["id"],
+          "name": name,
+          "name_en": name_en,
+          "description": description,
+          "imageUrl": randomExhibitData["imageUrl"],
+          "category": randomExhibitData["category"],
+        };
+      });
+    } catch (e) {
+      print("❌ Σφάλμα φόρτωσης κατηγορίας: $e");
+    } finally {
+      if (!mounted) return;
       setState(() => _isLoading = false);
     }
   }
@@ -344,24 +444,21 @@ class _MyHomePageState extends State<MyHomePage> {
         return;
       }
 
-      // Εντοπισμός της γλώσσας
       final locale = Localizations.localeOf(context).languageCode;
-      String searchColumn = locale == 'en' ? 'name_en' : 'name';  // Αν είναι Αγγλικά, αναζητά στο name_en
+      String searchColumn = locale == 'en' ? 'name_en' : 'name';
 
-      // Κλήση στη βάση δεδομένων για την αναζήτηση
       final response = await Supabase.instance.client
           .rpc('search_exhibits', params: {
         'search_term': currentQuery,
         'lang': searchColumn,
+        'category_id': categories[_selectedIndex]['id'],
       });
 
       final translated = <Map<String, dynamic>>[];
 
-      // Διατρέχουμε τα αποτελέσματα και τα εμφανίζουμε
       for (var exhibit in response) {
         String description = exhibit["description"] ?? "Δεν υπάρχει περιγραφή.";
 
-        // Αν η γλώσσα είναι Αγγλικά, χρησιμοποιούμε το name_en και μεταφράζουμε την περιγραφή
         if (locale == 'en') {
           final t = await Future.wait([
             TranslationHelper.translate(description, 'el', 'en'),
@@ -378,7 +475,6 @@ class _MyHomePageState extends State<MyHomePage> {
         });
       }
 
-      // Εξασφαλίζουμε ότι το query δεν έχει αλλάξει
       if (currentQuery == searchController.text.trim()) {
         if (mounted) {
           setState(() {
@@ -409,6 +505,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void dispose() {
     _debounce?.cancel();
+    _searchFocusNode.dispose();
     _subscription.cancel();
     super.dispose();
   }
@@ -428,13 +525,13 @@ class _MyHomePageState extends State<MyHomePage> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF224366), // Μπλε background
+          backgroundColor: const Color(0xFF224366),
           title: Text(
             AppLocalizations.of(context)!.aboutAppTitle,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Colors.white, // Λευκός τίτλος
+              color: Colors.white,
             ),
           ),
           content: Text(AppLocalizations.of(context)!.museumDes,
@@ -444,7 +541,6 @@ class _MyHomePageState extends State<MyHomePage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // 🔗 Κουμπί GitHub
                 TextButton.icon(
                   onPressed: () async {
                     final Uri url = Uri.parse("https://github.com/Sotos2013/dipae-tech-museum");
@@ -469,7 +565,6 @@ class _MyHomePageState extends State<MyHomePage> {
                     ),
                   ),
                 ),
-                // ❌ Κουμπί Κλείσιμο
                 TextButton(
                   onPressed: () => Navigator.pop(context),
                   child: const Text(
@@ -484,6 +579,7 @@ class _MyHomePageState extends State<MyHomePage> {
       },
     );
   }
+
   void _showHelpDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -499,6 +595,7 @@ class _MyHomePageState extends State<MyHomePage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildHelpRow(Icons.search, AppLocalizations.of(context)!.searchHelp),
+              _buildHelpRow(Icons.category, AppLocalizations.of(context)!.categoryHelp),
               _buildHelpRow(Icons.info_outline, AppLocalizations.of(context)!.tapExhibitHelp),
               _buildHelpRow(Icons.qr_code_scanner, AppLocalizations.of(context)!.scanQrHelp),
               _buildHelpRow(Icons.language, AppLocalizations.of(context)!.changeLanguageHelp),
@@ -530,6 +627,44 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCategoriesMenu(BuildContext context) {
+    final locale = Localizations.localeOf(context).languageCode;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      height: _showCategories ? 200 : 0,
+      decoration: BoxDecoration(
+        color: const Color(0xFF163E66),
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 10,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          children: categories.map((category) => ListTile(
+            leading: Icon(category['icon'], color: Colors.white),
+            title: Text(
+              locale == 'en' ? category['name_en'] : category['name'],
+              style: const TextStyle(color: Colors.white),
+            ),
+            onTap: () {
+              setState(() {
+                _selectedIndex = categories.indexOf(category);
+                _showCategories = false;
+              });
+              _fetchExhibitsByCategory(category['id']);
+            },
+          )).toList(),
+        ),
       ),
     );
   }
@@ -578,13 +713,18 @@ class _MyHomePageState extends State<MyHomePage> {
         onRefresh: _onRefresh,
         color: const Color(0xFFD41C1C),
         child: GestureDetector(
-          onTap: () => FocusScope.of(context).unfocus(),
+          onTap: () {
+            FocusScope.of(context).unfocus();
+            setState(() => _showCategories = false);
+          },
           child: Stack(
             children: [
               ListView(
                 padding: const EdgeInsets.all(20.0),
                 children: [
                   _buildSearchBar(context),
+                  const SizedBox(height: 10),
+                  _buildCategoriesMenu(context),
                   const SizedBox(height: 20),
                   if (isSearching)
                     _buildSearchResults(context)
@@ -607,6 +747,7 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
     );
   }
+
   Widget _buildMainInfo(BuildContext context) {
     return Column(
       children: [
@@ -622,30 +763,87 @@ class _MyHomePageState extends State<MyHomePage> {
       ],
     );
   }
+
   Widget _buildSearchBar(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0xFF005580),
-            blurRadius: 6,
-            offset: Offset(0, 2),
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF005580).withOpacity(0.3),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: TextField(
+              focusNode: _searchFocusNode,
+              controller: searchController,
+              decoration: InputDecoration(
+                hintText: AppLocalizations.of(context)!.searchPlaceholder,
+                prefixIcon: const Icon(Icons.search, color: Color(0xFF005580)),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+              ),
+              onChanged: _searchExhibits,
+            ),
           ),
-        ],
-      ),
-      child: TextField(
-        controller: searchController,
-        decoration: InputDecoration(
-          hintText: AppLocalizations.of(context)!.searchPlaceholder,
-          prefixIcon: const Icon(Icons.search, color: Color(0xFF005580)),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
         ),
-        onChanged: _searchExhibits,
-      ),
+        if (_searchFocused)
+          Builder(
+            builder: (popupContext) {
+              return IconButton(
+                icon: Icon(categories[_selectedIndex]['icon'], color: Colors.white),
+                tooltip: AppLocalizations.of(context)!.chooseCategory,
+                onPressed: () async {
+                  final RenderBox button = popupContext.findRenderObject() as RenderBox;
+                  final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+
+                  final RelativeRect position = RelativeRect.fromRect(
+                    Rect.fromPoints(
+                      button.localToGlobal(Offset.zero, ancestor: overlay),
+                      button.localToGlobal(button.size.bottomRight(Offset.zero), ancestor: overlay),
+                    ),
+                    Offset.zero & overlay.size,
+                  );
+
+                  final selected = await showMenu<String>(
+                    context: context,
+                    position: position,
+                    items: categories.map((category) {
+                      final locale = Localizations.localeOf(context).languageCode;
+                      final title = locale == 'en' ? category['name_en'] : category['name'];
+                      return PopupMenuItem<String>(
+                        value: category['id'],
+                        child: Row(
+                          children: [
+                            Icon(category['icon'], color: Colors.black),
+                            const SizedBox(width: 10),
+                            Text(title),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  );
+
+                  if (!mounted || selected == null) return;
+
+                  final index = categories.indexWhere((c) => c['id'] == selected);
+                  setState(() => _selectedIndex = index);
+                  await _fetchExhibitsByCategory(selected);
+                  if (searchController.text.trim().isNotEmpty) {
+                    _searchExhibits(searchController.text.trim());
+                  }
+                },
+              );
+            },
+          ),
+      ],
     );
   }
 
@@ -662,64 +860,62 @@ class _MyHomePageState extends State<MyHomePage> {
       children: searchResults.map((exhibit) => _buildExhibitTile(context, exhibit)).toList(),
     );
   }
+
   Widget _buildExhibitTile(BuildContext context, Map<String, dynamic> exhibit) {
     final locale = Localizations.localeOf(context).languageCode;
     final displayName = locale == 'en'
         ? exhibit['name_en'] ?? exhibit['name'] ?? ''
         : exhibit['name'] ?? exhibit['name_en'] ?? '';
 
-    return ListTile(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => QRInfoScreen(
-              id: exhibit['id'] ?? '',
-              name: exhibit['name'] ?? '',
-              name_en: exhibit['name_en'] ?? '',
-              description: exhibit['description'] ?? '',
-              imageUrl: exhibit['imageUrl'] ?? '',
-            ),
-          ),
-        );
-      },
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      title: Row(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Image.network(
-              exhibit['imageUrl'] ?? '',
-              width: 50,
-              height: 50,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => const Icon(
-                Icons.broken_image,
-                size: 50,
-                color: Color(0xFFD41C1C),
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      color: const Color(0xFF163E66),
+      child: ListTile(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => QRInfoScreen(
+                id: exhibit['id'] ?? '',
+                name: exhibit['name'] ?? '',
+                name_en: exhibit['name_en'] ?? '',
+                description: exhibit['description'] ?? '',
+                imageUrl: exhibit['imageUrl'] ?? '',
               ),
             ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              displayName,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+          );
+        },
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Image.network(
+            exhibit['imageUrl'] ?? '',
+            width: 50,
+            height: 50,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => const Icon(
+              Icons.broken_image,
+              size: 50,
+              color: Color(0xFFD41C1C),
             ),
           ),
-        ],
-      ),
-      subtitle: Text(
-        exhibit['description'] ?? '',
-        style: const TextStyle(fontSize: 14, color: Colors.white70),
-        maxLines: 3,
-        overflow: TextOverflow.ellipsis,
+        ),
+        title: Text(
+          displayName,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Text(
+          exhibit['description'] ?? '',
+          style: const TextStyle(fontSize: 14, color: Colors.white70),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
       ),
     );
   }
@@ -740,6 +936,7 @@ class _MyHomePageState extends State<MyHomePage> {
       );
     }
   }
+
   Widget _buildFeedbackButton(BuildContext context) {
     return ElevatedButton(
       onPressed: () async {
@@ -747,8 +944,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
         final url = Uri.parse(
           locale == 'en'
-              ? "https://docs.google.com/forms/d/e/1FAIpQLScNlIzKkxiP1jgLTaUS-3xiQjYt6O7UMpZ3rm1gGygJazSiKg/viewform" // Αγγλικό form
-              : "https://docs.google.com/forms/d/e/1FAIpQLSeve-CdFpu5gper6D2QnmHu6cs99fqvGeK7A2UCNmk6JRZWjQ/viewform", // Ελληνικό form
+              ? "https://docs.google.com/forms/d/e/1FAIpQLScNlIzKkxiP1jgLTaUS-3xiQjYt6O7UMpZ3rm1gGygJazSiKg/viewform"
+              : "https://docs.google.com/forms/d/e/1FAIpQLSeve-CdFpu5gper6D2QnmHu6cs99fqvGeK7A2UCNmk6JRZWjQ/viewform",
         );
 
         if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
@@ -783,6 +980,7 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
     );
   }
+
   Widget _buildUniversityLogo(BuildContext context) {
     return Column(
       children: [
@@ -794,6 +992,7 @@ class _MyHomePageState extends State<MyHomePage> {
       ],
     );
   }
+
   Widget _buildMuseumInfoSection(BuildContext context) {
     return IgnorePointer(
       child: Container(
@@ -839,6 +1038,7 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
     );
   }
+
   Widget _buildRandomExhibitCard(BuildContext context) {
     return GestureDetector(
       onTap: () {
