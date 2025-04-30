@@ -285,11 +285,13 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     _searchFocusNode.addListener(() {
-      if (mounted) {
-        setState(() {
-          _searchFocused = _searchFocusNode.hasFocus;
-        });
+      if (!mounted) return;
+      if (_searchFocusNode.hasFocus) {
+        _searchExhibits('%');
       }
+      setState(() {
+        _searchFocused = _searchFocusNode.hasFocus;
+      });
     });
     super.initState();
     _fetchRandomExhibit().then((_) {
@@ -365,6 +367,45 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  Future<void> _fetchAllExhibitsByCategory(String categoryId) async {
+    final locale = Localizations.localeOf(context).languageCode;
+    final searchColumn = locale == 'en' ? 'name_en' : 'name';
+
+    final response = await Supabase.instance.client
+        .rpc('search_exhibits', params: {
+      'search_term': '%',
+      'lang': searchColumn,
+      'category_id': categoryId,
+    });
+
+    final translated = <Map<String, dynamic>>[];
+
+    for (var exhibit in response) {
+      String description = exhibit["description"] ?? "Δεν υπάρχει περιγραφή.";
+
+      if (locale == 'en') {
+        final t = await Future.wait([
+          TranslationHelper.translate(description, 'el', 'en'),
+        ]);
+        description = t[0];
+      }
+
+      translated.add({
+        "id": exhibit["id"] ?? "",
+        "name": exhibit["name"] ?? "",
+        "name_en": exhibit["name_en"] ?? "",
+        "description": description,
+        "imageUrl": exhibit["imageUrl"] ?? "",
+      });
+    }
+
+    if (mounted) {
+      setState(() {
+        searchResults = translated;
+      });
+    }
+  }
+
   Future<void> _fetchExhibitsByCategory(String categoryId) async {
     if (!mounted) return;
     setState(() => _isLoading = true);
@@ -423,35 +464,22 @@ class _MyHomePageState extends State<MyHomePage> {
   Timer? _debounce;
 
   Future<void> _searchExhibits(String query) async {
-    if (query.trim().isEmpty) {
-      setState(() {
-        searchResults.clear();
-        isSearching = false;
-      });
-      return;
-    }
+    final trimmed = query.trim();
+    final searchTerm = trimmed.isEmpty ? '%' : '%$trimmed';
 
+    _debounce?.cancel(); // καθαρίζει προηγούμενο debounce
     _debounce = Timer(const Duration(milliseconds: 300), () async {
-      final currentQuery = searchController.text.trim();
-
-      if (currentQuery.isEmpty) {
-        if (mounted) {
-          setState(() {
-            searchResults.clear();
-            isSearching = false;
-          });
-        }
-        return;
-      }
-
       final locale = Localizations.localeOf(context).languageCode;
       String searchColumn = locale == 'en' ? 'name_en' : 'name';
 
+      final categoryId = categories[_selectedIndex]['id'];
+      final shouldFilterCategory = categoryId != 'all';
+
       final response = await Supabase.instance.client
           .rpc('search_exhibits', params: {
-        'search_term': currentQuery,
+        'search_term': searchTerm,
         'lang': searchColumn,
-        'category_id': categories[_selectedIndex]['id'],
+        'category_id': shouldFilterCategory ? categoryId : 'all',
       });
 
       final translated = <Map<String, dynamic>>[];
@@ -475,13 +503,11 @@ class _MyHomePageState extends State<MyHomePage> {
         });
       }
 
-      if (currentQuery == searchController.text.trim()) {
-        if (mounted) {
-          setState(() {
-            searchResults = translated;
-            isSearching = true;
-          });
-        }
+      if (mounted) {
+        setState(() {
+          searchResults = translated;
+          isSearching = true;
+        });
       }
     });
   }
@@ -766,98 +792,90 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Widget _buildSearchBar(BuildContext context) {
     final locale = Localizations.localeOf(context).languageCode;
+    final isWeb = kIsWeb;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          // 🔍 Search Field
-          Expanded(
-            child: TextField(
-              focusNode: _searchFocusNode,
-              controller: searchController,
-              decoration: InputDecoration(
-                hintText: AppLocalizations.of(context)!.searchPlaceholder,
-                filled: true,
-                fillColor: Colors.white,
-                prefixIcon: const Icon(Icons.search, color: Color(0xFF005580)),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-              ),
-              onChanged: _searchExhibits,
-            ),
-          ),
-
-          const SizedBox(width: 10),
-
-          // 📂 Category Selector (Dropdown for Web, ShowMenu for Android)
-          if (_searchFocused)
-            kIsWeb
-                ? Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF005580).withOpacity(0.3),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  focusNode: _searchFocusNode,
+                  controller: searchController,
+                  decoration: InputDecoration(
+                    hintText: AppLocalizations.of(context)!.searchPlaceholder,
+                    filled: true,
+                    fillColor: Colors.white,
+                    prefixIcon: const Icon(Icons.search, color: Color(0xFF005580)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding:
+                    const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
                   ),
-                ],
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: categories[_selectedIndex]['id'],
-                  icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
-                  items: categories.map((category) {
-                    final title = locale == 'en' ? category['name_en'] : category['name'];
-                    return DropdownMenuItem<String>(
-                      value: category['id'],
-                      child: Row(
-                        children: [
-                          Icon(category['icon'], color: Colors.black),
-                          const SizedBox(width: 10),
-                          Text(title),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (String? selected) async {
-                    if (selected == null) return;
-                    final index = categories.indexWhere((c) => c['id'] == selected);
-                    setState(() => _selectedIndex = index);
-                    await _fetchExhibitsByCategory(selected);
-                    if (searchController.text.trim().isNotEmpty) {
-                      _searchExhibits(searchController.text.trim());
-                    }
-                  },
+                  onChanged: _searchExhibits,
                 ),
               ),
-            )
-                : Builder(
-              builder: (popupContext) {
-                return IconButton(
+              const SizedBox(width: 8),
+              if (_searchFocused)
+                isWeb
+                    ? Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF005580).withOpacity(0.3),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: categories[_selectedIndex]['id'],
+                      icon: const Icon(Icons.arrow_drop_down),
+                      onChanged: (String? selected) async {
+                        if (selected == null) return;
+                        final index = categories.indexWhere((c) => c['id'] == selected);
+                        setState(() => _selectedIndex = index);
+
+                        final query = searchController.text.trim();
+                        if (query.isEmpty) {
+                          await _fetchAllExhibitsByCategory(selected);
+                          setState(() => isSearching = true);
+                        } else {
+                          _searchExhibits(query);
+                        }
+                      },
+                      items: categories.map((category) {
+                        final title = locale == 'en' ? category['name_en'] : category['name'];
+                        return DropdownMenuItem<String>(
+                          value: category['id'],
+                          child: Row(
+                            children: [
+                              Icon(category['icon'], color: Colors.black),
+                              const SizedBox(width: 10),
+                              Text(title),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                )
+                    : IconButton(
                   icon: Icon(categories[_selectedIndex]['icon'], color: Colors.white),
                   tooltip: AppLocalizations.of(context)!.chooseCategory,
                   onPressed: () async {
-                    final RenderBox button = popupContext.findRenderObject() as RenderBox;
-                    final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
-
-                    final RelativeRect position = RelativeRect.fromRect(
-                      Rect.fromPoints(
-                        button.localToGlobal(Offset.zero, ancestor: overlay),
-                        button.localToGlobal(button.size.bottomRight(Offset.zero), ancestor: overlay),
-                      ),
-                      Offset.zero & overlay.size,
-                    );
-
                     final selected = await showMenu<String>(
                       context: context,
-                      position: position,
+                      position: const RelativeRect.fromLTRB(100, 100, 0, 0),
                       items: categories.map((category) {
                         final title = locale == 'en' ? category['name_en'] : category['name'];
                         return PopupMenuItem<String>(
@@ -877,16 +895,20 @@ class _MyHomePageState extends State<MyHomePage> {
 
                     final index = categories.indexWhere((c) => c['id'] == selected);
                     setState(() => _selectedIndex = index);
-                    await _fetchExhibitsByCategory(selected);
-                    if (searchController.text.trim().isNotEmpty) {
-                      _searchExhibits(searchController.text.trim());
+
+                    final query = searchController.text.trim();
+                    if (query.isEmpty) {
+                      await _fetchAllExhibitsByCategory(selected);
+                      setState(() => isSearching = true);
+                    } else {
+                      _searchExhibits(query);
                     }
                   },
-                );
-              },
-            ),
-        ],
-      ),
+                ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
