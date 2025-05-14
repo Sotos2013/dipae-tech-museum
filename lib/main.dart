@@ -2,6 +2,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui' as ui;
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -44,7 +45,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  Locale _locale = const Locale('el');
+  Locale? _locale;
 
   @override
   void initState() {
@@ -54,11 +55,24 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> _loadSavedLocale() async {
     final prefs = await SharedPreferences.getInstance();
-    final langCode = prefs.getString('language_code') ?? 'el';
-    setState(() {
-      _locale = Locale(langCode);
-    });
+    final savedLangCode = prefs.getString('language_code');
+
+    if (savedLangCode != null) {
+      // Αν υπάρχει αποθηκευμένη γλώσσα, γινεται η χρηση της
+      setState(() {
+        _locale = Locale(savedLangCode);
+      });
+    } else {
+      // Αν όχι, γινεται χρηση της γλώσσα του συστήματος
+      final systemLangCode = ui.PlatformDispatcher.instance.locale.languageCode;
+      final isGreek = systemLangCode == 'el';
+
+      setState(() {
+        _locale = Locale(isGreek ? 'el' : 'en');
+      });
+    }
   }
+
 
   void setLocale(Locale newLocale) async {
     final prefs = await SharedPreferences.getInstance();
