@@ -133,7 +133,11 @@ class _FinalQuizScreenState extends State<FinalQuizScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF005580),
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                        minimumSize: const Size(double.infinity, 40),
+                        textStyle: const TextStyle(fontSize: 15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
                       ),
                       child: Text(a['text']),
                     ),

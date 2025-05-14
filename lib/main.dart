@@ -255,7 +255,7 @@ class _MyHomePageState extends State<MyHomePage> {
       'id': 'all',
       'name': 'Όλα τα εκθέματα',
       'name_en': 'All Exhibits',
-      'icon': Icons.all_inclusive,
+      'icon': MdiIcons.formatListBulletedSquare,
     },
     {
       'id': 'computers',
@@ -274,12 +274,6 @@ class _MyHomePageState extends State<MyHomePage> {
       'name': 'Ήχος & Μουσική',
       'name_en': 'Audio & Music',
       'icon': MdiIcons.music,
-    },
-    {
-      'id': 'photography',
-      'name': 'Φωτογραφία',
-      'name_en': 'Photography',
-      'icon': MdiIcons.camera,
     },
   ];
 
