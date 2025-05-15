@@ -10,7 +10,6 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:untitled1/translation_helper.dart';
 import 'final_quiz_screen.dart';
 import 'qr_info_screen.dart';
 import 'qr_scanner_screen.dart';
@@ -389,6 +388,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> _fetchAllExhibitsByCategory(String categoryId) async {
     final locale = Localizations.localeOf(context).languageCode;
+
     final searchColumn = locale == 'en' ? 'name_en' : 'name';
 
     final response = await Supabase.instance.client
@@ -398,31 +398,22 @@ class _MyHomePageState extends State<MyHomePage> {
       'category_id': categoryId,
     });
 
-    final translated = <Map<String, dynamic>>[];
+    final items = <Map<String, dynamic>>[];
 
     for (var exhibit in response) {
-      String description = exhibit["description"] ?? "Δεν υπάρχει περιγραφή.";
-      String description_en = exhibit["description_en"] ?? "Δεν υπάρχει περιγραφή.";
-      if (locale == 'en') {
-        final t = await Future.wait([
-          TranslationHelper.translate(description, 'el', 'en'),
-        ]);
-        description = t[0];
-      }
-
-      translated.add({
+      items.add({
         "id": exhibit["id"] ?? "",
         "name": exhibit["name"] ?? "",
         "name_en": exhibit["name_en"] ?? "",
-        "description": description,
-        "description_en": description_en,
+        "description": exhibit["description"] ?? "",
+        "description_en": exhibit["description_en"] ?? "",
         "imageUrl": exhibit["imageUrl"] ?? "",
       });
     }
 
     if (mounted) {
       setState(() {
-        searchResults = translated;
+        searchResults = items;
       });
     }
   }
@@ -444,36 +435,23 @@ class _MyHomePageState extends State<MyHomePage> {
         'category_input': categoryId,
       });
 
-      if (!mounted) return;
-      if (response.isEmpty) {
+      if (!mounted || response.isEmpty) {
         setState(() => _isLoading = false);
         return;
       }
-      final randomExhibitData = response[Random().nextInt(response.length)];
 
-      String name = randomExhibitData["name"] ?? "Άγνωστο Έκθεμα";
-      String name_en = randomExhibitData["name_en"] ?? "Unknown Exhibit";
-      String description = randomExhibitData["description"] ?? "Δεν υπάρχει περιγραφή.";
-      String description_en = randomExhibitData["description_en"] ?? "Δεν υπάρχει περιγραφή.";
+      final exhibit = response[Random().nextInt(response.length)];
       final locale = Localizations.localeOf(context).languageCode;
 
-      if (locale == 'en') {
-        final translations = await Future.wait([
-          TranslationHelper.translate(description, 'el', 'en'),
-        ]);
-        description = translations[0];
-      }
-
-      if (!mounted) return;
       setState(() {
         randomExhibit = {
-          "id": randomExhibitData["id"],
-          "name": name,
-          "name_en": name_en,
-          "description": description,
-          "description_en": description_en,
-          "imageUrl": randomExhibitData["imageUrl"],
-          "category": randomExhibitData["category"],
+          "id": exhibit["id"],
+          "name": exhibit["name"],
+          "name_en": exhibit["name_en"],
+          "description": exhibit["description"],
+          "description_en": exhibit["description_en"],
+          "imageUrl": exhibit["imageUrl"],
+          "category": exhibit["category"],
         };
       });
     } catch (e) {
@@ -490,7 +468,7 @@ class _MyHomePageState extends State<MyHomePage> {
     final trimmed = query.trim();
     final searchTerm = trimmed.isEmpty ? '%' : '%$trimmed';
 
-    _debounce?.cancel(); // καθαρίζει προηγούμενο debounce
+    _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 300), () async {
       final locale = Localizations.localeOf(context).languageCode;
       String searchColumn = locale == 'en' ? 'name_en' : 'name';
@@ -506,25 +484,19 @@ class _MyHomePageState extends State<MyHomePage> {
       });
 
       final translated = <Map<String, dynamic>>[];
+      print("🔍 Response: $response");
+
 
       for (var exhibit in response) {
-        String description = exhibit["description"] ?? "Δεν υπάρχει περιγραφή.";
-        String description_en = exhibit["description_en"] ?? "Δεν υπάρχει περιγραφή.";
-        if (locale == 'en') {
-          final t = await Future.wait([
-            TranslationHelper.translate(description, 'el', 'en'),
-          ]);
-          description = t[0];
-        }
-
         translated.add({
           "id": exhibit["id"] ?? "",
           "name": exhibit["name"] ?? "",
           "name_en": exhibit["name_en"] ?? "",
-          "description": description,
-          "description_en": description_en,
+          "description": exhibit["description"] ?? "Δεν υπάρχει περιγραφή.",
+          "description_en": exhibit["description_en"] ?? "No description.",
           "imageUrl": exhibit["imageUrl"] ?? "",
         });
+        print("🔍 Response: ${exhibit['imageUrl']}");
       }
 
       if (mounted) {
@@ -899,9 +871,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Widget _buildExhibitTile(BuildContext context, Map<String, dynamic> exhibit) {
     final locale = Localizations.localeOf(context).languageCode;
-    final displayName = locale == 'en'
-        ? exhibit['name_en'] ?? exhibit['name'] ?? ''
-        : exhibit['name'] ?? exhibit['name_en'] ?? '';
+    final displayName = locale == 'en' ? exhibit['name_en'] : exhibit['name'];
+    final displayDescription = locale == 'en' ? exhibit['description_en'] : exhibit['description'];
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
@@ -948,7 +919,7 @@ class _MyHomePageState extends State<MyHomePage> {
           overflow: TextOverflow.ellipsis,
         ),
         subtitle: Text(
-          exhibit['description'] ?? '',
+          displayDescription,
           style: const TextStyle(fontSize: 14, color: Colors.white70),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
