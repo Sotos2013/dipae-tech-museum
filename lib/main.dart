@@ -289,6 +289,12 @@ class _MyHomePageState extends State<MyHomePage> {
       'name_en': 'Audio & Music',
       'icon': MdiIcons.music,
     },
+    {
+      'id': 'electronic_components',
+      'name': 'Ηλεκτρονικά Εξαρτήματα',
+      'name_en': 'Electronic Components',
+      'icon': MdiIcons.resistor,
+    },
   ];
 
   @override
