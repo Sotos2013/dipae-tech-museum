@@ -363,25 +363,21 @@ class _MyHomePageState extends State<MyHomePage> {
 
       if (response == null) return;
 
+      final locale = Localizations.localeOf(context).languageCode;
+
       String name = response["name"] ?? "Άγνωστο Έκθεμα";
       String name_en = response["name_en"] ?? "Unknown Exhibit";
       String description = response["description"] ?? "Δεν υπάρχει περιγραφή.";
-      final locale = Localizations.localeOf(context).languageCode;
-
-      if (locale == 'en') {
-        final translations = await Future.wait([
-          TranslationHelper.translate(description, 'el', 'en'),
-        ]);
-        description = translations[0];
-      }
-
+      String description_en = response["description_en"] ?? "No description.";
+      String imageUrl = response["imageUrl"] ?? "No image.";
       setState(() {
         randomExhibit = {
           "id": response["id"],
           "name": name,
           "name_en": name_en,
           "description": description,
-          "imageUrl": response["imageUrl"],
+          "description_en": description_en,
+          "imageUrl": imageUrl,
         };
       });
     } catch (e) {
@@ -406,7 +402,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
     for (var exhibit in response) {
       String description = exhibit["description"] ?? "Δεν υπάρχει περιγραφή.";
-
+      String description_en = exhibit["description_en"] ?? "Δεν υπάρχει περιγραφή.";
       if (locale == 'en') {
         final t = await Future.wait([
           TranslationHelper.translate(description, 'el', 'en'),
@@ -419,6 +415,7 @@ class _MyHomePageState extends State<MyHomePage> {
         "name": exhibit["name"] ?? "",
         "name_en": exhibit["name_en"] ?? "",
         "description": description,
+        "description_en": description_en,
         "imageUrl": exhibit["imageUrl"] ?? "",
       });
     }
@@ -457,6 +454,7 @@ class _MyHomePageState extends State<MyHomePage> {
       String name = randomExhibitData["name"] ?? "Άγνωστο Έκθεμα";
       String name_en = randomExhibitData["name_en"] ?? "Unknown Exhibit";
       String description = randomExhibitData["description"] ?? "Δεν υπάρχει περιγραφή.";
+      String description_en = randomExhibitData["description_en"] ?? "Δεν υπάρχει περιγραφή.";
       final locale = Localizations.localeOf(context).languageCode;
 
       if (locale == 'en') {
@@ -473,6 +471,7 @@ class _MyHomePageState extends State<MyHomePage> {
           "name": name,
           "name_en": name_en,
           "description": description,
+          "description_en": description_en,
           "imageUrl": randomExhibitData["imageUrl"],
           "category": randomExhibitData["category"],
         };
@@ -510,7 +509,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
       for (var exhibit in response) {
         String description = exhibit["description"] ?? "Δεν υπάρχει περιγραφή.";
-
+        String description_en = exhibit["description_en"] ?? "Δεν υπάρχει περιγραφή.";
         if (locale == 'en') {
           final t = await Future.wait([
             TranslationHelper.translate(description, 'el', 'en'),
@@ -523,6 +522,7 @@ class _MyHomePageState extends State<MyHomePage> {
           "name": exhibit["name"] ?? "",
           "name_en": exhibit["name_en"] ?? "",
           "description": description,
+          "description_en": description_en,
           "imageUrl": exhibit["imageUrl"] ?? "",
         });
       }
@@ -916,6 +916,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 name: exhibit['name'] ?? '',
                 name_en: exhibit['name_en'] ?? '',
                 description: exhibit['description'] ?? '',
+                description_en: exhibit['description_en'] ?? '',
                 imageUrl: exhibit['imageUrl'] ?? '',
               ),
             ),
@@ -1086,6 +1087,7 @@ class _MyHomePageState extends State<MyHomePage> {
               name: randomExhibit!['name'] ?? '',
               name_en: randomExhibit!['name_en'] ?? '',
               description: randomExhibit!['description'] ?? '',
+              description_en: randomExhibit!['description_en'] ?? '',
               imageUrl: randomExhibit!['imageUrl'] ?? '',
             ),
           ),

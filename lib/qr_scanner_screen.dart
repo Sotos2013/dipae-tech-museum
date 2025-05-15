@@ -80,6 +80,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
               name: response['name'] ?? '',
               name_en: response['name_en'] ?? '',
               description: response['description'] ?? '',
+              description_en: response['description_en'] ?? '',
               imageUrl: response['imageUrl'] ?? '',
             ),
           ),

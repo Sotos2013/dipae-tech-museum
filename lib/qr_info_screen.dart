@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:untitled1/quiz_screen.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'translation_helper.dart';
 import 'main.dart';
 
 class QRInfoScreen extends StatefulWidget {
@@ -10,6 +8,7 @@ class QRInfoScreen extends StatefulWidget {
   final String name;
   final String name_en;
   final String description;
+  final String description_en;
   final String imageUrl;
 
   const QRInfoScreen({
@@ -18,6 +17,7 @@ class QRInfoScreen extends StatefulWidget {
     required this.name,
     required this.name_en,
     required this.description,
+    required this.description_en,
     required this.imageUrl,
   }) : super(key: key);
 
@@ -26,52 +26,18 @@ class QRInfoScreen extends StatefulWidget {
 }
 
 class _QRInfoScreenState extends State<QRInfoScreen> {
-  String translatedDescription = '';
-  bool isTranslating = false;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _handleTranslation();
-  }
-
-  Future<void> _handleTranslation() async {
-    final locale = Localizations.localeOf(context).languageCode;
-    setState(() => isTranslating = true);
-
-    final prefs = await SharedPreferences.getInstance();
-    final descKey = 'trans_${widget.description}_$locale';
-
-    String? description = prefs.getString(descKey);
-    if (description == null) {
-      try {
-        if (locale == 'en') {
-          description = await TranslationHelper.translate(widget.description, 'el', 'en');
-        } else {
-          description = await TranslationHelper.translate(widget.description, 'en', 'el');
-        }
-
-        if (description != null) {
-          await prefs.setString(descKey, description);
-        }
-      } catch (e) {
-        description = widget.description;
-      }
-    }
-
-    translatedDescription = description;
-    if (mounted) setState(() => isTranslating = false);
-  }
-
   @override
   Widget build(BuildContext context) {
     final locale = Localizations.localeOf(context).languageCode;
     final encodedUrl = Uri.encodeFull(widget.imageUrl);
 
-    // 🔄 Υπολογισμός σωστού ονόματος ανάλογα με τη γλώσσα
     final name = locale == 'en'
         ? (widget.name_en.isNotEmpty ? widget.name_en : widget.name)
         : (widget.name.isNotEmpty ? widget.name : widget.name_en);
+
+    final description = locale == 'en'
+        ? (widget.description_en.isNotEmpty ? widget.description_en : widget.description)
+        : (widget.description.isNotEmpty ? widget.description : widget.description_en);
 
     return Scaffold(
       appBar: AppBar(
@@ -85,20 +51,14 @@ class _QRInfoScreenState extends State<QRInfoScreen> {
             onPressed: () async {
               final newLocale = locale == 'el' ? const Locale('en') : const Locale('el');
               MyApp.setLocale(context, newLocale);
-              await Future.delayed(const Duration(milliseconds: 100));
-              if (mounted) {
-                _handleTranslation(); // Ξαναμετάφραση της περιγραφής
-                setState(() {}); // ✅ Ανανεώνει το UI ώστε να αλλάξει και το όνομα
-              }
+              setState(() {}); // 🔁 Εξαναγκάζει rebuild για να αλλάξει η περιγραφή
             },
           ),
         ],
         backgroundColor: const Color(0xFF005580),
       ),
       backgroundColor: const Color(0xFF224366),
-      body: isTranslating
-          ? const Center(child: CircularProgressIndicator(color: Colors.white))
-          : Center(
+      body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20.0),
           child: Card(
@@ -144,7 +104,7 @@ class _QRInfoScreenState extends State<QRInfoScreen> {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    translatedDescription,
+                    description,
                     textAlign: TextAlign.center,
                     style: const TextStyle(fontSize: 18, color: Colors.black87),
                   ),
