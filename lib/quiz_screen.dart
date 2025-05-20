@@ -78,7 +78,7 @@ class _QuizScreenState extends State<QuizScreen> {
       score++;
     }
 
-    // ✅ Ελέγχουμε αν υπάρχει άλλη ερώτηση ή αν τελείωσε το Quiz
+    // Ελέγχουμε αν υπάρχει άλλη ερώτηση ή αν τελείωσε το Quiz
     if (currentQuestionIndex < questions.length - 1) {
       setState(() {
         currentQuestionIndex++;
@@ -99,9 +99,15 @@ class _QuizScreenState extends State<QuizScreen> {
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
-                Navigator.pop(context); // ✅ Επιστροφή στην προηγούμενη οθόνη
+                Navigator.pop(context); // Επιστροφή στην προηγούμενη οθόνη
               },
-              child: const Text("ΟΚ"),
+              child: const Text("ΟΚ",
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF224366),
+                ),
+              ),
             ),
           ],
         );

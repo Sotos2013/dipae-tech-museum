@@ -110,36 +110,47 @@ class _FinalQuizScreenState extends State<FinalQuizScreen> {
         backgroundColor: Color(0xFF005580),
         title: Text("${AppLocalizations.of(context)!.question} ${currentQuestionIndex + 1} / ${questions.length}"),
       ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+      body: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Center(
           child: Card(
             elevation: 6,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
             child: Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(20.0),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
                     q['question'],
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                     textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF224366),
+                    ),
                   ),
                   const SizedBox(height: 20),
                   ...(q['answers'] as List).map((a) => Padding(
                     padding: const EdgeInsets.symmetric(vertical: 6.0),
-                    child: ElevatedButton(
-                      onPressed: () => _checkAnswer(a['correct']),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF005580),
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size(double.infinity, 40),
-                        textStyle: const TextStyle(fontSize: 15),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
+                    child: Center(
+                      child: ElevatedButton(
+                        onPressed: () => _checkAnswer(a['correct']),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF005580),
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size(double.infinity, 40),
+                          textStyle: const TextStyle(fontSize: 15),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                        child: Text(
+                          a['text'],
+                          textAlign: TextAlign.center,
                         ),
                       ),
-                      child: Text(a['text']),
                     ),
                   )),
                 ],
