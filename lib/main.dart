@@ -693,79 +693,96 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: GestureDetector(
-          onTap: () {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => const MyHomePage()),
-            );
-          },
-          child: Text(
-            AppLocalizations.of(context)!.museumTitle,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) async {
+        // Αν υπάρχει αναζήτηση ή οποιαδήποτε κατηγορία έχει επιλεγεί
+        if (isSearching || _selectedIndex != 0) {
+          setState(() {
+            isSearching = false;
+            searchController.clear();
+            _selectedIndex = 0;
+          });
+          await _fetchRandomExhibit(); // Επαναφορά αρχικής οθόνης
+        } else {
+          // Αν είμαστε ήδη στην αρχική, τότε επιτρέπουμε έξοδο
+          Navigator.of(context).maybePop();
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: GestureDetector(
+            onTap: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => const MyHomePage()),
+              );
+            },
+            child: Text(
+              AppLocalizations.of(context)!.museumTitle,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.help_outline, color: Colors.white),
+              onPressed: () => _showHelpDialog(context),
+            ),
+            IconButton(
+              icon: const Icon(Icons.info_outline, color: Colors.white),
+              onPressed: () => _showAboutDialog(context),
+            ),
+            IconButton(
+              icon: const Icon(Icons.language, color: Colors.white),
+              onPressed: () async {
+                final currentLang = Localizations.localeOf(context).languageCode;
+                final newLocale = currentLang == 'el' ? const Locale('en') : const Locale('el');
+                MyApp.setLocale(context, newLocale);
+              },
+            ),
+          ],
+        ),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator(color: Colors.white))
+            : RefreshIndicator(
+          onRefresh: _onRefresh,
+          color: const Color(0xFFD41C1C),
+          child: GestureDetector(
+            onTap: () {
+              FocusScope.of(context).unfocus();
+              setState(() => _showCategories = false);
+            },
+            child: Stack(
+              children: [
+                ListView(
+                  padding: const EdgeInsets.all(20.0),
+                  children: [
+                    _buildSearchBar(context),
+                    const SizedBox(height: 10),
+                    _buildCategoriesMenu(context),
+                    const SizedBox(height: 20),
+                    if (isSearching)
+                      _buildSearchResults(context)
+                    else if (randomExhibit != null)
+                      _buildMainInfo(context),
+                  ],
+                ),
+              ],
             ),
           ),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.help_outline, color: Colors.white),
-            onPressed: () => _showHelpDialog(context),
-          ),
-          IconButton(
-            icon: const Icon(Icons.info_outline, color: Colors.white),
-            onPressed: () => _showAboutDialog(context),
-          ),
-          IconButton(
-            icon: const Icon(Icons.language, color: Colors.white),
-            onPressed: () async {
-              final currentLang = Localizations.localeOf(context).languageCode;
-              final newLocale = currentLang == 'el' ? const Locale('en') : const Locale('el');
-              MyApp.setLocale(context, newLocale);
-            },
-          ),
-        ],
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Colors.white))
-          : RefreshIndicator(
-        onRefresh: _onRefresh,
-        color: const Color(0xFFD41C1C),
-        child: GestureDetector(
-          onTap: () {
-            FocusScope.of(context).unfocus();
-            setState(() => _showCategories = false);
+        floatingActionButton: FloatingActionButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const QRScannerScreen()),
+            );
           },
-          child: Stack(
-            children: [
-              ListView(
-                padding: const EdgeInsets.all(20.0),
-                children: [
-                  _buildSearchBar(context),
-                  const SizedBox(height: 10),
-                  _buildCategoriesMenu(context),
-                  const SizedBox(height: 20),
-                  if (isSearching)
-                    _buildSearchResults(context)
-                  else if (randomExhibit != null)
-                    _buildMainInfo(context),
-                ],
-              ),
-            ],
-          ),
+          child: const Icon(Icons.qr_code_scanner, color: Colors.white),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const QRScannerScreen()),
-          );
-        },
-        child: const Icon(Icons.qr_code_scanner, color: Colors.white),
       ),
     );
   }
