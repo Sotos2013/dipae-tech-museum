@@ -1,4 +1,4 @@
-package com.example.untitled1
+package gr.ihu.techmuseum
 
 import io.flutter.embedding.android.FlutterActivity
 
