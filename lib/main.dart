@@ -56,22 +56,23 @@ class _MyAppState extends State<MyApp> {
     final prefs = await SharedPreferences.getInstance();
     final savedLangCode = prefs.getString('language_code');
 
-    if (savedLangCode != null) {
-      // Αν υπάρχει αποθηκευμένη γλώσσα, γινεται η χρηση της
+    if (savedLangCode != null && ['en', 'el'].contains(savedLangCode)) {
+      // Αν υπάρχει αποθηκευμένη γλώσσα και είναι έγκυρη
       setState(() {
         _locale = Locale(savedLangCode);
       });
     } else {
-      // Αν όχι, γινεται χρηση της γλώσσα του συστήματος
-      final systemLangCode = ui.PlatformDispatcher.instance.locale.languageCode;
-      final isGreek = systemLangCode == 'el';
+      // Χρήση της κύριας γλώσσας του συστήματος Android
+      final systemLocales = WidgetsBinding.instance.platformDispatcher.locales;
+      final systemLangCode = systemLocales.isNotEmpty
+          ? systemLocales.first.languageCode
+          : 'en';
 
       setState(() {
-        _locale = Locale(isGreek ? 'el' : 'en');
+        _locale = Locale(systemLangCode == 'el' ? 'el' : 'en');
       });
     }
   }
-
 
   void setLocale(Locale newLocale) async {
     final prefs = await SharedPreferences.getInstance();
